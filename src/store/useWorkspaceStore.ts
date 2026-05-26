@@ -15,7 +15,7 @@ export interface WorkspaceState {
   renameWorkspace: (id: string, name: string) => void;
   deleteWorkspace: (id: string) => void;
   setActiveFile: (workspaceId: string, fileId: string) => void;
-  createFile: (workspaceId: string, name: string) => void;
+  createFile: (workspaceId: string, name: string) => string;
   renameFile: (workspaceId: string, fileId: string, newName: string) => void;
   deleteFile: (workspaceId: string, fileId: string) => void;
   updateFileContent: (workspaceId: string, fileId: string, updatedContent: string) => void;
@@ -121,7 +121,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             };
           }),
 
-        createFile: (workspaceId, name) =>
+        createFile: (workspaceId, name) => {
+          let newId = '';
           set((state) => {
             const workspace = state.workspaces[workspaceId];
             if (!workspace) return state;
@@ -131,6 +132,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               type: 'file',
               content: `# ${name.replace(/\.md$/i, '')}\n\n`,
             };
+            newId = newFile.id;
             return {
               workspaces: {
                 ...state.workspaces,
@@ -141,7 +143,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 },
               },
             };
-          }),
+          });
+          return newId;
+        },
 
         renameFile: (workspaceId, fileId, newName) =>
           set((state) => {

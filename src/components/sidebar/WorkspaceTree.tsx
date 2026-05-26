@@ -140,9 +140,10 @@ export const WorkspaceTree: React.FC = () => {
         </div>
         <button
           onClick={() => {
-            const name = prompt('File name (e.g. Note.md):');
-            if (name && name.trim()) {
-              createFile(workspace.id, name.trim().endsWith('.md') ? name.trim() : `${name.trim()}.md`);
+            const newId = createFile(workspace.id, 'new_file.md');
+            if (newId) {
+              setEditingId(newId);
+              setEditName('new_file');
             }
           }}
           className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
