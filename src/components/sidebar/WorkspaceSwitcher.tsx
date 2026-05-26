@@ -238,14 +238,14 @@ export const WorkspaceSwitcher: React.FC = () => {
 
                   {/* Action buttons */}
                   {!isEditing && (
-                    <span className="flex items-center gap-0.5 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <span className="flex items-center gap-1 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       {/* Rename */}
                       <button
                         onClick={(e) => handleStartRename(e, ws.id, ws.name)}
-                        className="p-1 rounded text-gray-600 hover:text-indigo-400 hover:bg-gray-800 transition-all"
+                        className="p-1.5 rounded text-gray-500 hover:text-indigo-400 hover:bg-gray-800 transition-all"
                         title="Rename"
                       >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
@@ -253,12 +253,12 @@ export const WorkspaceSwitcher: React.FC = () => {
                       <button
                         onClick={(e) => handleDelete(e, ws.id)}
                         disabled={!canDelete}
-                        className={`p-1 rounded transition-all ${
+                        className={`p-1.5 rounded transition-all ${
                           !canDelete
                             ? 'text-gray-700 cursor-not-allowed'
                             : isConfirmingDelete
                               ? 'text-rose-400 bg-rose-500/10'
-                              : 'text-gray-600 hover:text-rose-400 hover:bg-gray-800'
+                              : 'text-gray-500 hover:text-rose-400 hover:bg-gray-800'
                         }`}
                         title={
                           !canDelete
@@ -268,7 +268,7 @@ export const WorkspaceSwitcher: React.FC = () => {
                               : 'Delete'
                         }
                       >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
