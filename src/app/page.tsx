@@ -3,7 +3,7 @@
 import React from 'react';
 import { ProjectSwitcher } from '../components/sidebar/ProjectSwitcher';
 import { ProjectTree } from '../components/sidebar/ProjectTree';
-import { MarkdownEditor } from '../components/editor/MarkdownEditor';
+import { BlockEditor } from '../components/editor/BlockEditor';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { useProjectStore } from '../store/useProjectStore';
 import { useConversationStore } from '../store/useConversationStore';
@@ -37,7 +37,7 @@ export default function Home() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0">
-        <MarkdownEditor />
+        <BlockEditor />
       </main>
 
       <aside className="w-80 shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col">
