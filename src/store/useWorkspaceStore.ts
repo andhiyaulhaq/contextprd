@@ -16,6 +16,8 @@ export interface WorkspaceState {
   deleteWorkspace: (id: string) => void;
   setActiveFile: (workspaceId: string, fileId: string) => void;
   createFile: (workspaceId: string, name: string) => void;
+  renameFile: (workspaceId: string, fileId: string, newName: string) => void;
+  deleteFile: (workspaceId: string, fileId: string) => void;
   updateFileContent: (workspaceId: string, fileId: string, updatedContent: string) => void;
 }
 
@@ -136,6 +138,67 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                   ...workspace,
                   fileTree: [...workspace.fileTree, newFile],
                   activeFileId: newFile.id,
+                },
+              },
+            };
+          }),
+
+        renameFile: (workspaceId, fileId, newName) =>
+          set((state) => {
+            const workspace = state.workspaces[workspaceId];
+            if (!workspace) return state;
+            
+            const renameNode = (nodes: FileNode[]): FileNode[] =>
+              nodes.map((node) => {
+                if (node.id === fileId) return { ...node, name: newName };
+                if (node.children) return { ...node, children: renameNode(node.children) };
+                return node;
+              });
+
+            return {
+              workspaces: {
+                ...state.workspaces,
+                [workspaceId]: {
+                  ...workspace,
+                  fileTree: renameNode(workspace.fileTree),
+                },
+              },
+            };
+          }),
+
+        deleteFile: (workspaceId, fileId) =>
+          set((state) => {
+            const workspace = state.workspaces[workspaceId];
+            if (!workspace) return state;
+            
+            const deleteNode = (nodes: FileNode[]): FileNode[] =>
+              nodes.filter(node => node.id !== fileId)
+                   .map(node => node.children ? { ...node, children: deleteNode(node.children) } : node);
+
+            const newFileTree = deleteNode(workspace.fileTree);
+            // If the active file is deleted, try to select another file if possible
+            let newActiveFileId = workspace.activeFileId;
+            if (workspace.activeFileId === fileId) {
+              const findFirstFile = (nodes: FileNode[]): string | null => {
+                for (const node of nodes) {
+                  if (node.type === 'file') return node.id;
+                  if (node.children) {
+                    const childFileId = findFirstFile(node.children);
+                    if (childFileId) return childFileId;
+                  }
+                }
+                return null;
+              };
+              newActiveFileId = findFirstFile(newFileTree);
+            }
+
+            return {
+              workspaces: {
+                ...state.workspaces,
+                [workspaceId]: {
+                  ...workspace,
+                  fileTree: newFileTree,
+                  activeFileId: newActiveFileId,
                 },
               },
             };

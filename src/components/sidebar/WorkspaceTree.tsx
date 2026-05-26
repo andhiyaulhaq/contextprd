@@ -16,6 +16,12 @@ export const WorkspaceTree: React.FC = () => {
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActiveFile = useWorkspaceStore((s) => s.setActiveFile);
   const createFile = useWorkspaceStore((s) => s.createFile);
+  const renameFile = useWorkspaceStore((s) => s.renameFile);
+  const deleteFile = useWorkspaceStore((s) => s.deleteFile);
+
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editName, setEditName] = React.useState('');
+  const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
 
   const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
 
@@ -44,22 +50,78 @@ export const WorkspaceTree: React.FC = () => {
 
     return (
       <div key={node.id}>
-        <button
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all active:scale-[0.99] ${
+        <div
+          className={`group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all ${
             isActive
               ? 'bg-indigo-500/10 text-indigo-400 font-medium'
               : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
           }`}
           style={{ paddingLeft: `${12 + depth * 16}px` }}
           onClick={() => {
-            if (!isDir) {
+            if (!isDir && editingId !== node.id) {
               setActiveFile(workspace.id, node.id);
             }
           }}
         >
           <FileIcon name={node.name} isDir={isDir} />
-          <span className="truncate">{node.name}</span>
-        </button>
+          
+          {editingId === node.id ? (
+            <input
+              autoFocus
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={() => {
+                if (editName.trim() && editName.trim() !== node.name) {
+                  renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
+                }
+                setEditingId(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (editName.trim() && editName.trim() !== node.name) {
+                    renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
+                  }
+                  setEditingId(null);
+                }
+                if (e.key === 'Escape') setEditingId(null);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 bg-gray-800 text-gray-200 rounded px-1.5 py-0.5 border border-indigo-500/40 outline-none text-xs min-w-0"
+            />
+          ) : (
+            <span className="flex-1 truncate">{node.name}</span>
+          )}
+
+          {!isDir && editingId !== node.id && (
+            <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingId(node.id);
+                  setEditName(node.name.replace(/\.md$/i, ''));
+                }}
+                className="p-1 rounded cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
+                title="Rename"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteDialogFile({ id: node.id, name: node.name });
+                }}
+                className="p-1 rounded cursor-pointer text-gray-500 hover:text-rose-400 hover:bg-gray-800 transition-all hover:scale-105 active:scale-95"
+                title="Delete"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </span>
+          )}
+        </div>
         {node.children?.map((child) => renderNode(child, depth + 1))}
       </div>
     );
@@ -92,6 +154,40 @@ export const WorkspaceTree: React.FC = () => {
         </button>
       </div>
       {workspace.fileTree.map((node) => renderNode(node))}
+
+      {deleteDialogFile && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-200">Delete File</h2>
+              <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone.</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-300">
+                Are you sure you want to delete <strong className="text-gray-100">{deleteDialogFile.name}</strong>?
+              </p>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeleteDialogFile(null)}
+                  className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 hover:bg-gray-700 transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    deleteFile(workspace.id, deleteDialogFile.id);
+                    setDeleteDialogFile(null);
+                  }}
+                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-[0.98]"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
