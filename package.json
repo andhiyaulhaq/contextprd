@@ -4,13 +4,13 @@
   "private": true,
   "description": "Context-Aware PRD Orchestrator",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/generate-templates.mjs && next dev",
+    "build": "node scripts/generate-templates.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "tauri": "tauri"
+    "tauri": "node scripts/generate-templates.mjs && tauri"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

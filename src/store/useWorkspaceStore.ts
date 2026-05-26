@@ -192,7 +192,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             if (workspace.activeFileId === fileId) {
               const findFirstFile = (nodes: FileNode[]): string | null => {
                 for (const node of nodes) {
-                  if (node.type === 'file') return node.id;
+                  if (node.type === 'markdown') return node.id;
                   if (node.children) {
                     const childFileId = findFirstFile(node.children);
                     if (childFileId) return childFileId;
