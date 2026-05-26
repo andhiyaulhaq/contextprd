@@ -96,11 +96,48 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
   );
 };
 
+const DeleteWorkspaceDialog: React.FC<{
+  workspaceName: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}> = ({ workspaceName, onClose, onConfirm }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-200">Delete Workspace</h2>
+          <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone.</p>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-gray-300">
+            Are you sure you want to delete the workspace <strong className="text-gray-100">{workspaceName}</strong>?
+          </p>
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition-all"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const WorkspaceSwitcher: React.FC = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteDialogWsId, setDeleteDialogWsId] = useState<string | null>(null);
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -119,18 +156,10 @@ export const WorkspaceSwitcher: React.FC = () => {
     }
   }, [editingId]);
 
-  // Clear confirm-delete state after 3 seconds
-  useEffect(() => {
-    if (!confirmDeleteId) return;
-    const timer = setTimeout(() => setConfirmDeleteId(null), 3000);
-    return () => clearTimeout(timer);
-  }, [confirmDeleteId]);
-
   const handleStartRename = (e: React.MouseEvent, wsId: string, currentName: string) => {
     e.stopPropagation();
     setEditingId(wsId);
     setEditName(currentName);
-    setConfirmDeleteId(null);
   };
 
   const handleFinishRename = (wsId: string) => {
@@ -141,13 +170,15 @@ export const WorkspaceSwitcher: React.FC = () => {
     setEditingId(null);
   };
 
-  const handleDelete = (e: React.MouseEvent, wsId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, wsId: string) => {
     e.stopPropagation();
-    if (confirmDeleteId === wsId) {
-      deleteWorkspace(wsId);
-      setConfirmDeleteId(null);
-    } else {
-      setConfirmDeleteId(wsId);
+    setDeleteDialogWsId(wsId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteDialogWsId) {
+      deleteWorkspace(deleteDialogWsId);
+      setDeleteDialogWsId(null);
     }
   };
 
@@ -194,7 +225,6 @@ export const WorkspaceSwitcher: React.FC = () => {
             {workspaceList.map((ws) => {
               const isActive = ws.id === activeWorkspaceId;
               const isEditing = editingId === ws.id;
-              const isConfirmingDelete = confirmDeleteId === ws.id;
               const canDelete = !(isStreaming && isActive);
 
               return (
@@ -251,21 +281,17 @@ export const WorkspaceSwitcher: React.FC = () => {
                       </button>
                       {/* Delete */}
                       <button
-                        onClick={(e) => handleDelete(e, ws.id)}
+                        onClick={(e) => handleDeleteClick(e, ws.id)}
                         disabled={!canDelete}
                         className={`p-1.5 rounded transition-all ${
                           !canDelete
                             ? 'text-gray-700 cursor-not-allowed'
-                            : isConfirmingDelete
-                              ? 'text-rose-400 bg-rose-500/10'
-                              : 'text-gray-500 hover:text-rose-400 hover:bg-gray-800'
+                            : 'text-gray-500 hover:text-rose-400 hover:bg-gray-800'
                         }`}
                         title={
                           !canDelete
                             ? 'Cannot delete while AI is streaming'
-                            : isConfirmingDelete
-                              ? 'Click again to confirm delete'
-                              : 'Delete'
+                            : 'Delete'
                         }
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -281,6 +307,13 @@ export const WorkspaceSwitcher: React.FC = () => {
         )}
       </div>
       {showDialog && <CreateWorkspaceDialog onClose={() => setShowDialog(false)} />}
+      {deleteDialogWsId && (
+        <DeleteWorkspaceDialog
+          workspaceName={workspaces[deleteDialogWsId]?.name || ''}
+          onClose={() => setDeleteDialogWsId(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </>
   );
 };

@@ -32,7 +32,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         workspaces: {},
         activeWorkspaceId: null,
 
-        setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+        setActiveWorkspace: (id) => {
+          set({ activeWorkspaceId: id });
+          const convStore = useConversationStore.getState();
+          const convs = convStore.getConversationsForWorkspace(id);
+          if (convs.length > 0) {
+            convStore.switchConversation(convs[0].id);
+          }
+        },
 
         createWorkspace: (name, category) => {
           const id = `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -75,20 +82,28 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           }),
 
         deleteWorkspace: (id) => {
-          // Clean up conversations first
-          useConversationStore.getState().deleteConversationsForWorkspace(id);
-
+          let nextId: string | null = null;
+          
           set((state) => {
             const { [id]: _removed, ...remaining } = state.workspaces;
             const remainingIds = Object.keys(remaining);
+            nextId = state.activeWorkspaceId === id ? remainingIds[0] || null : state.activeWorkspaceId;
             return {
               workspaces: remaining,
-              activeWorkspaceId:
-                state.activeWorkspaceId === id
-                  ? remainingIds[0] || null
-                  : state.activeWorkspaceId,
+              activeWorkspaceId: nextId,
             };
           });
+
+          // Clean up conversations AFTER state update to avoid intermediate inconsistent reads
+          const convStore = useConversationStore.getState();
+          convStore.deleteConversationsForWorkspace(id);
+
+          if (nextId) {
+            const convs = convStore.getConversationsForWorkspace(nextId);
+            if (convs.length > 0) {
+              convStore.switchConversation(convs[0].id);
+            }
+          }
         },
 
         setActiveFile: (workspaceId, fileId) =>
