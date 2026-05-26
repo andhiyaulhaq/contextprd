@@ -178,7 +178,7 @@ export const WorkspaceTree: React.FC = () => {
       {workspace.fileTree.map((node) => renderNode(node))}
 
       {deleteDialogFile && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
               <h2 className="text-sm font-semibold text-gray-200">Delete File</h2>
