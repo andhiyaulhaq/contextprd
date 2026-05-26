@@ -131,6 +131,7 @@ contextprd/
 
 #### Main Content Section: Live MD + Mermaid Viewport
 - Compiles standard markdown elements and intercepts ````mermaid` blocks, processing text strings into responsive vector graphics (SVGs) natively on the client.
+- **[Planned Architecture Shift]** Integrates a CodeMirror-based engine to support `Cmd+K` inline AI text generation, ephemeral diff highlighting, and cursor-aware prompt ingestion. See `docs/inline-ai-architecture.md` for details.
 
 #### Right Sidebar: OpenRouter Chat
 - LLM chat interface that runs streaming model threads.
@@ -177,6 +178,7 @@ contextprd/
 2. **Context Compilation:** When a thread execution request occurs, the application gathers the active document segment, attaches domain rules based on metadata parameters, and generates a structured schema payload.
 3. **Intent Classification:** The payload passes through the local SKILL_ROUTER (compromise.js) to determine which free model endpoint to target.
 4. **Stream Parsing & Interception:** The returned token stream maps directly into the markdown state engine. If code blocks are detected, the system passes them to the Mermaid validation layer before committing them to storage.
+5. **Ephemeral Draft State (Inline Pattern):** For inline generation, tokens stream into an ephemeral draft state with code decorations (green/red highlights) within the editor. Only upon explicit user "Accept" action does the content commit to the Zustand store history.
 
 ### 3.4 Tauri Desktop Assembly
 
@@ -772,16 +774,30 @@ Task: Fix the structural design layout definitions. Return ONLY the valid compil
 - Polish error states for Mermaid failures
 - Add loading/skeleton states for diagram generation
 
-### Phase 4: System Hardening & Release (Weeks 10–12)
+### Phase 4: Inline Copilot UX (Weeks 10–11)
+
+**Milestone:** Transition the markdown editor to a CodeMirror-based engine to support inline AI generation and spatial context awareness.
+
+#### Week 10: Engine Migration & Ephemeral State
+- Replace standard `<textarea>` with `@uiw/react-codemirror`.
+- Implement `draftString` state and `ViewPlugin` for rendering green/red diff highlights.
+- Build the `compileInlineContext` function to capture text before and after the cursor.
+
+#### Week 11: Action Widgets & Interaction Polish
+- Implement the `Cmd+K` floating command bar widget.
+- Implement the Accept/Reject/Retry floating action bar.
+- Hook inline accept actions directly to `zundo` history.
+
+### Phase 5: System Hardening & Release (Weeks 12–14)
 
 **Milestone:** Stable, optimized desktop build with offline capability and production-ready PRD output.
 
-#### Week 10: Blueprint Automation & Local Search
+#### Week 12: Blueprint Automation & Local Search
 - Build workspace creation wizard with domain selector
 - Implement template blueprint copier (`lib/templates/blueprints.ts`)
 - Add basic local file search (filename + content via Fuse.js or similar)
 
-#### Week 11: Offline Hardening & Test Suite
+#### Week 13: Offline Hardening & Test Suite
 - Network loss simulation tests
   - Verify file editing and navigation work offline
   - Verify AI chat disables input + shows banner
@@ -796,7 +812,7 @@ Task: Fix the structural design layout definitions. Return ONLY the valid compil
   - MermaidRenderer: success and error states
   - Chat sidebar: streaming message display
 
-#### Week 12: Production Compilations & Optimizations
+#### Week 14: Production Compilations & Optimizations
 - Memory profile analysis (Next.js runtime)
 - Fix any leak vulnerabilities
 - Compile target-specific distributions:

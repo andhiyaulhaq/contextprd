@@ -45,3 +45,26 @@ Return your changes cleanly. If diagrams are required, generate them entirely in
 
   return { prompt, headers };
 }
+
+export function compileInlineContext(
+  content: string,
+  cursorIndex: number,
+  userQuery: string
+): string {
+  const textBefore = content.substring(0, cursorIndex);
+  const textAfter = content.substring(cursorIndex);
+  
+  return `
+[DOCUMENT CONTEXT BEFORE CURSOR]
+${textBefore}
+
+<INSERTION_POINT>
+
+[DOCUMENT CONTEXT AFTER CURSOR]
+${textAfter}
+
+INSTRUCTION: ${userQuery}
+Generate the text that should be placed exactly at the <INSERTION_POINT>.
+Return ONLY the raw markdown content to be inserted. Do not include introductory text.
+  `.trim();
+}

@@ -23,7 +23,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onM
     let idx = 0;
 
     while ((match = mermaidRegex.exec(content)) !== null) {
-      const placeholder = `__MERMAID_${idx}__`;
+      const placeholder = `MERMAIDBLOCKPLACEHOLDER${idx}`;
       mermaidBlocks.push(match[1].trim());
       processed = processed.replace(match[0], placeholder);
       idx++;
@@ -39,7 +39,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onM
     let result = String(file);
 
     mermaidBlocks.forEach((block, i) => {
-      const placeholder = `__MERMAID_${i}__`;
+      const placeholder = `MERMAIDBLOCKPLACEHOLDER${i}`;
       const renderer = `<div class="mermaid-container" data-mermaid-index="${i}">${block}</div>`;
       result = result.replace(placeholder, renderer);
     });

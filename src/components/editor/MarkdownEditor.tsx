@@ -1,10 +1,40 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { languages } from '@codemirror/language-data';
+import { Decoration, DecorationSet, EditorView } from '@codemirror/view';
+import { StateField, StateEffect, Transaction } from '@codemirror/state';
+import { useAIStream } from '../../hooks/useAIStream';
+import { compileInlineContext } from '../../lib/ai/promptCompiler';
+import { resolveModelEndpoints } from '../../lib/ai/router';
 
 type ViewMode = 'edit' | 'preview' | 'split';
+
+const setDraftRange = StateEffect.define<{from: number, to: number} | null>();
+
+const draftHighlightField = StateField.define<DecorationSet>({
+  create() { return Decoration.none; },
+  update(value: DecorationSet, tr: Transaction) {
+    value = value.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(setDraftRange)) {
+        if (effect.value) {
+          value = Decoration.set([
+            Decoration.mark({ class: 'bg-indigo-500/20 text-indigo-300 rounded-sm' }).range(effect.value.from, effect.value.to)
+          ]);
+        } else {
+          value = Decoration.none;
+        }
+      }
+    }
+    return value;
+  },
+  provide: (f: StateField<DecorationSet>) => EditorView.decorations.from(f)
+});
 
 export const MarkdownEditor: React.FC = () => {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -19,42 +49,183 @@ export const MarkdownEditor: React.FC = () => {
   const [localContent, setLocalContent] = useState(activeFile?.content || '');
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [wordCount, setWordCount] = useState(0);
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  
+  const { sendQuery, abort } = useAIStream();
+
+  const [showCmdK, setShowCmdK] = useState(false);
+  const [cmdKQuery, setCmdKQuery] = useState('');
+  const [draftState, setDraftState] = useState<'idle' | 'streaming' | 'review'>('idle');
+  const draftRangeRef = useRef<{from: number, to: number} | null>(null);
+  const draftOriginalRef = useRef<{from: number, to: number, text: string} | null>(null);
 
   useEffect(() => {
-    setLocalContent(activeFile?.content || '');
-  }, [activeFile?.id, activeFile?.content]);
+    if (draftState === 'idle') {
+      const content = activeFile?.content || '';
+      setLocalContent(content);
+      const timer = setTimeout(() => {
+        const view = editorRef.current?.view;
+        if (view && view.state.doc.toString() !== content) {
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: content }
+          });
+        }
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeFile?.id, activeFile?.content, draftState]);
 
   useEffect(() => {
-    if (!activeFile) return;
+    if (!activeFile || draftState !== 'idle') return;
     const timer = setTimeout(() => {
       if (localContent !== activeFile.content) {
         updateFileContent(workspace!.id, activeFile.id, localContent);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [localContent, activeFile?.id]);
+  }, [localContent, activeFile?.id, draftState]);
 
   useEffect(() => {
     const words = localContent.trim() ? localContent.trim().split(/\s+/).length : 0;
     setWordCount(words);
   }, [localContent]);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setLocalContent(e.target.value);
+  useEffect(() => {
+    const handleInsert = (e: CustomEvent<{ text: string }>) => {
+      const view = editorRef.current?.view;
+      if (!view) return;
+      
+      const selection = view.state.selection.main;
+      view.dispatch({
+        changes: { from: selection.from, to: selection.to, insert: e.detail.text }
+      });
+      
+      if (workspace && activeFile) {
+        // We delay the update slightly to ensure the view state has updated
+        setTimeout(() => {
+          const finalContent = view.state.doc.toString();
+          updateFileContent(workspace.id, activeFile.id, finalContent);
+        }, 50);
+      }
+    };
+    
+    window.addEventListener('insert-editor-text', handleInsert as EventListener);
+    return () => window.removeEventListener('insert-editor-text', handleInsert as EventListener);
+  }, [workspace, activeFile, updateFileContent]);
+
+  const handleChange = useCallback((value: string) => {
+    setLocalContent(value);
   }, []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
-      const ta = e.currentTarget;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      setLocalContent((prev) => prev.substring(0, start) + '  ' + prev.substring(end));
-      setTimeout(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      }, 0);
+      if (draftState !== 'idle') return;
+      setShowCmdK(true);
     }
-  }, []);
+    if (e.key === 'Escape') {
+      if (showCmdK) setShowCmdK(false);
+      if (draftState === 'review') handleReject();
+    }
+  }, [showCmdK, draftState]);
+
+  const executeCmdK = () => {
+    if (!cmdKQuery.trim() || !editorRef.current?.view || !activeFile || !workspace) return;
+    
+    setShowCmdK(false);
+    setDraftState('streaming');
+
+    const view = editorRef.current.view;
+    const selection = view.state.selection.main;
+    const cursorIndex = selection.from;
+
+    draftOriginalRef.current = {
+      from: selection.from,
+      to: selection.to,
+      text: view.state.sliceDoc(selection.from, selection.to)
+    };
+
+    const promptText = compileInlineContext(localContent, cursorIndex, cmdKQuery);
+    const models = resolveModelEndpoints('SKILL_WRITER');
+
+    let accumulatedText = '';
+
+    sendQuery(promptText, models[0].modelId, {
+      onChunk: (text) => {
+        const view = editorRef.current?.view;
+        if (!view || !draftOriginalRef.current) return;
+
+        // CodeMirror automatically normalizes \r\n to \n internally. 
+        // We must do the same before calculating lengths, otherwise accumulatedText.length 
+        // will overshoot the CodeMirror document length and start deleting the user's document!
+        const normalizedText = text.replace(/\r\n/g, '\n');
+        
+        const currentTo = draftOriginalRef.current.from + accumulatedText.length;
+        
+        const transaction = view.state.update({
+          changes: { from: draftOriginalRef.current.from, to: currentTo, insert: normalizedText }
+        });
+        view.dispatch(transaction);
+        
+        accumulatedText = normalizedText;
+        
+        draftRangeRef.current = { 
+          from: draftOriginalRef.current.from, 
+          to: draftOriginalRef.current.from + normalizedText.length 
+        };
+
+        view.dispatch({
+          effects: setDraftRange.of(draftRangeRef.current)
+        });
+      },
+      onComplete: () => {
+        setDraftState('review');
+        setCmdKQuery('');
+      },
+      onError: (err) => {
+        console.error("Inline generation error:", err);
+        // Do not reject completely on error (e.g. rate limit midway).
+        // Let the user keep what was generated so far!
+        setDraftState('review');
+        setCmdKQuery('');
+      }
+    });
+  };
+
+  const handleAccept = () => {
+    if (!editorRef.current?.view) return;
+    const view = editorRef.current.view;
+    view.dispatch({ effects: setDraftRange.of(null) });
+    setDraftState('idle');
+    draftRangeRef.current = null;
+    draftOriginalRef.current = null;
+    
+    if (workspace && activeFile) {
+      const finalContent = view.state.doc.toString();
+      updateFileContent(workspace.id, activeFile.id, finalContent);
+    }
+  };
+
+  const handleReject = () => {
+    if (!editorRef.current?.view || !draftRangeRef.current || !draftOriginalRef.current) return;
+    const view = editorRef.current.view;
+    
+    abort();
+    
+    view.dispatch({
+      changes: {
+        from: draftRangeRef.current.from,
+        to: Math.min(draftRangeRef.current.to, view.state.doc.length),
+        insert: draftOriginalRef.current.text
+      },
+      effects: setDraftRange.of(null)
+    });
+    
+    setDraftState('idle');
+    draftRangeRef.current = null;
+    draftOriginalRef.current = null;
+  };
 
   if (!activeFile) {
     return (
@@ -68,10 +239,10 @@ export const MarkdownEditor: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative" onKeyDown={handleKeyDown}>
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50">
         <div className="flex items-center gap-2 min-w-0">
-          <svg className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
           <span className="text-xs text-gray-400 font-mono truncate">{activeFile.path}</span>
@@ -93,31 +264,67 @@ export const MarkdownEditor: React.FC = () => {
           ))}
         </div>
       </div>
-      <div className="flex flex-1 overflow-hidden">
-        {(viewMode === 'edit' || viewMode === 'split') && (
-          <textarea
-            className={`h-full p-4 bg-transparent text-gray-200 font-mono text-sm resize-none outline-none placeholder-gray-700 leading-relaxed ${
-              viewMode === 'split' ? 'w-1/2 border-r border-gray-800' : 'w-full'
-            }`}
-            value={localContent}
+      <div className="flex flex-1 overflow-hidden relative">
+        <div className={`h-full bg-transparent text-gray-200 text-sm overflow-hidden ${viewMode === 'split' ? 'w-1/2 border-r border-gray-800' : 'w-full'} ${viewMode === 'preview' ? 'hidden' : ''}`}>
+          <CodeMirror
+            ref={editorRef}
+            height="100%"
+            theme="dark"
+            extensions={[markdown({ base: markdownLanguage, codeLanguages: languages }), draftHighlightField]}
             onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            placeholder="Start writing markdown..."
+            className="h-full font-mono outline-none"
+            readOnly={draftState !== 'idle'}
           />
-        )}
-        {(viewMode === 'preview' || viewMode === 'split') && (
-          <div className={`h-full overflow-y-auto p-4 bg-gray-950/30 ${viewMode === 'split' ? 'w-1/2' : 'w-full'}`}>
-            {localContent.trim() ? (
-              <MarkdownRenderer content={localContent} />
-            ) : (
-              <div className="text-gray-600 text-sm text-center mt-16">
-                Nothing to preview — start typing in the editor
-              </div>
-            )}
-          </div>
-        )}
+        </div>
+        
+        <div className={`h-full overflow-y-auto p-4 bg-gray-950/30 ${viewMode === 'split' ? 'w-1/2' : 'w-full'} ${viewMode === 'edit' ? 'hidden' : ''}`}>
+          {localContent.trim() ? (
+            <MarkdownRenderer content={localContent} />
+          ) : (
+            <div className="text-gray-600 text-sm text-center mt-16">
+              Nothing to preview — start typing in the editor
+            </div>
+          )}
+        </div>
       </div>
+
+      {showCmdK && (
+        <div className="absolute top-16 left-1/4 w-1/2 bg-gray-800 border border-gray-700 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <input
+            autoFocus
+            type="text"
+            className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-sm rounded-md px-3 py-2 outline-none focus:border-indigo-500"
+            placeholder="Ask AI to edit or generate (Press Enter to submit, Esc to cancel)"
+            value={cmdKQuery}
+            onChange={(e) => setCmdKQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') executeCmdK();
+              if (e.key === 'Escape') setShowCmdK(false);
+            }}
+          />
+        </div>
+      )}
+
+      {draftState === 'streaming' && (
+        <div className="absolute bottom-6 right-6 bg-gray-800/90 backdrop-blur border border-indigo-500/50 shadow-xl rounded-full px-4 py-2 flex items-center gap-2 z-50">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <span className="text-xs font-medium text-indigo-300">AI is writing...</span>
+          <button onClick={handleReject} className="ml-2 text-xs text-gray-400 hover:text-rose-400">Cancel</button>
+        </div>
+      )}
+
+      {draftState === 'review' && (
+        <div className="absolute bottom-6 right-6 bg-gray-800/95 backdrop-blur border border-gray-600 shadow-2xl rounded-lg p-2 flex items-center gap-2 z-50 animate-in slide-in-from-bottom-5">
+          <button onClick={handleAccept} className="px-3 py-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            Accept
+          </button>
+          <button onClick={handleReject} className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            Reject
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,9 @@ import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { classifyIntent } from '../../lib/ai/skillRouter';
 import { resolveModelEndpoints, ModelRoute } from '../../lib/ai/router';
 import { compileContextPayload } from '../../lib/ai/promptCompiler';
-import { useOpenRouterStream } from '../../hooks/useOpenRouterStream';
+import { useAIStream } from '../../hooks/useAIStream';
+import { useSelfHealingOrchestrator } from '../../hooks/useSelfHealingOrchestrator';
+import { extractMermaidBlocks } from '../../lib/mermaid/extractBlocks';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { ConversationPicker } from './ConversationPicker';
@@ -25,7 +27,8 @@ export const ChatSidebar: React.FC = () => {
   const createConversation = useWorkspaceStore((s) => s.createConversation);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { sendQuery, abort } = useOpenRouterStream();
+  const { sendQuery, sendSilentQuery, abort } = useAIStream();
+  const { executeHealCycle } = useSelfHealingOrchestrator();
 
   const assistantIdRef = useRef<string | null>(null);
   const modelsRef = useRef<ModelRoute[]>([]);
@@ -114,6 +117,47 @@ export const ChatSidebar: React.FC = () => {
     createConversation(workspace.id, `Conversation ${(workspace.conversations.length + 1)}`);
     setStreamingMessageId(null);
   }, [workspace, abort, createConversation, setStreamingMessageId]);
+
+  const handleMermaidError = useCallback(
+    async (
+      chartDefinition: string,
+      errorString: string,
+      _blockIndex: number,
+      reportResult: (fixedCode: string | null) => void,
+    ) => {
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
+      if (!apiKey) {
+        reportResult(null);
+        return;
+      }
+
+      const architectureModels = resolveModelEndpoints('SKILL_ARCHITECT');
+
+      executeHealCycle(
+        chartDefinition,
+        errorString,
+        async (repairPrompt) => {
+          const modelId = architectureModels[0]?.modelId || 'openrouter/free';
+          const { text, error } = await sendSilentQuery(repairPrompt, modelId);
+
+          if (error || !text) {
+            reportResult(null);
+            return;
+          }
+
+          const blocks = extractMermaidBlocks(text);
+          const fixedBlock = blocks.find((b) => b.type === 'mermaid');
+          if (fixedBlock && fixedBlock.type === 'mermaid') {
+            reportResult(fixedBlock.chartDefinition);
+          } else {
+            reportResult(null);
+          }
+        },
+        () => reportResult(null),
+      );
+    },
+    [executeHealCycle, sendSilentQuery],
+  );
 
   const handleSend = useCallback(async (userQuery: string) => {
     if (!workspace || streamingMessageId) return;
@@ -223,6 +267,7 @@ export const ChatSidebar: React.FC = () => {
             message={msg}
             isStreaming={msg.id === streamingMessageId}
             onDelete={!isStreaming ? () => deleteChatMessage(workspace.id, msg.id) : undefined}
+            onMermaidError={handleMermaidError}
           />
         ))}
         <div ref={messagesEndRef} />
