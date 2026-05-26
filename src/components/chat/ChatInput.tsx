@@ -35,7 +35,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isStreaming, onSto
         <button
           type="button"
           onClick={() => setDeepAuditMode(!deepAuditMode)}
-          className={`text-xs px-2 py-1 rounded-md transition-all active:scale-[0.98] ${
+          className={`text-xs px-2 py-1 rounded-md cursor-pointer transition-all active:scale-[0.98] ${
             deepAuditMode
               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
               : 'text-gray-600 hover:text-gray-300 hover:bg-gray-800 border border-transparent'
@@ -63,7 +63,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isStreaming, onSto
           <button
             type="button"
             onClick={onStop}
-            className="shrink-0 bg-rose-600 text-white text-sm rounded-lg px-4 py-2.5 hover:bg-rose-500 transition-all flex items-center gap-1.5 active:scale-[0.98]"
+            className="shrink-0 bg-rose-600 text-white text-sm rounded-lg px-4 py-2.5 cursor-pointer hover:bg-rose-500 transition-all flex items-center gap-1.5 active:scale-[0.98]"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h12v12H6z" />
@@ -74,7 +74,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isStreaming, onSto
           <button
             type="submit"
             disabled={disabled || !input.trim()}
-            className="shrink-0 bg-indigo-600 text-white text-sm rounded-lg px-4 py-2.5 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 active:scale-[0.98]"
+            className="shrink-0 bg-indigo-600 text-white text-sm rounded-lg px-4 py-2.5 cursor-pointer hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 active:scale-[0.98]"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7" />

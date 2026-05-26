@@ -253,7 +253,7 @@ export const MarkdownEditor: React.FC = () => {
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`text-xs px-2 py-1 rounded-md transition-all ${
+              className={`text-xs px-2 py-1 rounded-md cursor-pointer transition-all active:scale-[0.98] ${
                 viewMode === mode
                   ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
                   : 'text-gray-500 hover:text-gray-300 border border-transparent'
@@ -309,17 +309,17 @@ export const MarkdownEditor: React.FC = () => {
         <div className="absolute bottom-6 right-6 bg-gray-800/90 backdrop-blur border border-indigo-500/50 shadow-xl rounded-full px-4 py-2 flex items-center gap-2 z-50">
           <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
           <span className="text-xs font-medium text-indigo-300">AI is writing...</span>
-          <button onClick={handleReject} className="ml-2 text-xs text-gray-400 hover:text-rose-400">Cancel</button>
+          <button onClick={handleReject} className="ml-2 text-xs text-gray-400 hover:text-rose-400 cursor-pointer transition-all active:scale-[0.98]">Cancel</button>
         </div>
       )}
 
       {draftState === 'review' && (
         <div className="absolute bottom-6 right-6 bg-gray-800/95 backdrop-blur border border-gray-600 shadow-2xl rounded-lg p-2 flex items-center gap-2 z-50 animate-in slide-in-from-bottom-5">
-          <button onClick={handleAccept} className="px-3 py-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+          <button onClick={handleAccept} className="px-3 py-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-md text-xs font-medium cursor-pointer transition-all active:scale-[0.98] flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             Accept
           </button>
-          <button onClick={handleReject} className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+          <button onClick={handleReject} className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 rounded-md text-xs font-medium cursor-pointer transition-all active:scale-[0.98] flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             Reject
           </button>

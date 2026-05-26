@@ -80,7 +80,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
     <div className="w-full" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left text-xs text-gray-400 hover:text-gray-300 truncate bg-gray-800/40 rounded px-2 py-1 border border-gray-700/40 hover:border-gray-600/50 hover:bg-gray-800/80 active:scale-[0.98] transition-all"
+        className="w-full text-left text-xs text-gray-400 hover:text-gray-300 truncate bg-gray-800/40 rounded px-2 py-1 border border-gray-700/40 hover:border-gray-600/50 hover:bg-gray-800/80 cursor-pointer active:scale-[0.98] transition-all"
         title={activeConv?.name || 'No conversation'}
       >
         {activeConv?.name || 'Conversation'}
@@ -123,7 +123,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
                   <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleStartRename(e, conv.id, conv.name)}
-                      className="p-1 rounded text-gray-500 hover:text-indigo-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
+                      className="p-1 rounded cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
                       title="Rename"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -132,7 +132,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
                     </button>
                     <button
                       onClick={(e) => handleDeleteClick(e, conv.id)}
-                      className="p-1 rounded text-gray-500 hover:text-rose-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
+                      className="p-1 rounded cursor-pointer text-gray-500 hover:text-rose-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
                       title="Delete"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -162,13 +162,13 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
                 <button
                   type="button"
                   onClick={() => setDeleteDialogConvId(null)}
-                  className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-700 transition-all active:scale-[0.98]"
+                  className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 hover:bg-gray-700 transition-all active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmDelete}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-[0.98]"
+                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-[0.98]"
                 >
                   Delete
                 </button>

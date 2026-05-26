@@ -44,7 +44,7 @@ export const WorkspaceTree: React.FC = () => {
     return (
       <div key={node.id}>
         <button
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-all ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all active:scale-[0.99] ${
             isActive
               ? 'bg-indigo-500/10 text-indigo-400 font-medium'
               : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'

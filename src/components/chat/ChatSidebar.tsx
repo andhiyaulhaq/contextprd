@@ -249,7 +249,7 @@ export const ChatSidebar: React.FC = () => {
         <button
           onClick={handleNewChat}
           disabled={isStreaming}
-          className="text-xs text-gray-500 hover:text-gray-300 disabled:opacity-30 transition-all px-2 py-1 rounded-md hover:bg-gray-800/60 shrink-0 active:scale-[0.98]"
+          className="text-xs text-gray-500 cursor-pointer hover:text-gray-300 disabled:opacity-30 transition-all px-2 py-1 rounded-md hover:bg-gray-800/60 shrink-0 active:scale-[0.98]"
           title="New conversation"
         >
           + New

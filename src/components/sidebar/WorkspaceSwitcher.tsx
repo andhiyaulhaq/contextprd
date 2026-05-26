@@ -64,7 +64,7 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
                   key={cat.value}
                   type="button"
                   onClick={() => setCategory(cat.value)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-all active:scale-[0.98] ${category === cat.value
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border cursor-pointer transition-all active:scale-[0.98] ${category === cat.value
                       ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
                       : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                     }`}
@@ -79,13 +79,13 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
+              className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-all active:scale-[0.98]"
+              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg cursor-pointer hover:bg-indigo-500 transition-all active:scale-[0.98]"
             >
               Create
             </button>
@@ -116,13 +116,13 @@ const DeleteWorkspaceDialog: React.FC<{
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
+              className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-500 transition-all active:scale-[0.98]"
+              className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 transition-all active:scale-[0.98]"
             >
               Delete
             </button>
@@ -198,7 +198,7 @@ export const WorkspaceSwitcher: React.FC = () => {
           </div>
           <button
             onClick={() => setShowDialog(true)}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all hover:scale-105 active:scale-95"
+            className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all hover:scale-105 active:scale-95"
             title="New Workspace"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -212,7 +212,7 @@ export const WorkspaceSwitcher: React.FC = () => {
           <div className="px-3 pb-3">
             <button
               onClick={() => setShowDialog(true)}
-              className="w-full py-6 rounded-lg border border-dashed border-gray-700 text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs text-center active:scale-[0.98]"
+              className="w-full py-6 rounded-lg border border-dashed border-gray-700 cursor-pointer text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs text-center active:scale-[0.98]"
             >
               <svg className="w-6 h-6 mx-auto mb-1.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -272,7 +272,7 @@ export const WorkspaceSwitcher: React.FC = () => {
                       {/* Rename */}
                       <button
                         onClick={(e) => handleStartRename(e, ws.id, ws.name)}
-                        className="p-1.5 rounded text-gray-500 hover:text-indigo-400 hover:bg-gray-800 transition-all hover:scale-105 active:scale-95"
+                        className="p-1.5 rounded cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-gray-800 transition-all hover:scale-105 active:scale-95"
                         title="Rename"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -283,7 +283,7 @@ export const WorkspaceSwitcher: React.FC = () => {
                       <button
                         onClick={(e) => handleDeleteClick(e, ws.id)}
                         disabled={!canDelete}
-                        className={`p-1.5 rounded transition-all hover:scale-105 active:scale-95 ${
+                        className={`p-1.5 rounded cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                           !canDelete
                             ? 'text-gray-700 cursor-not-allowed'
                             : 'text-gray-500 hover:text-rose-400 hover:bg-gray-800'
