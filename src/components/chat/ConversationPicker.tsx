@@ -77,7 +77,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="w-full" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full text-left text-xs text-gray-400 hover:text-gray-300 truncate bg-gray-800/40 rounded px-2 py-1 border border-gray-700/40 hover:border-gray-600/50 hover:bg-gray-800/80 active:scale-[0.98] transition-all"
@@ -87,7 +87,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+        <div className="absolute top-full left-2 right-2 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
           {conversations.length === 0 && (
             <div className="px-3 py-4 text-xs text-gray-500 text-center">No conversations</div>
           )}
