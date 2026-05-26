@@ -17,6 +17,7 @@ export interface DomainProfile {
 
 export interface Conversation {
   id: string;
+  workspaceId: string;
   name: string;
   messages: ChatMessage[];
   createdAt: number;
@@ -30,8 +31,6 @@ export interface Workspace {
   profile: DomainProfile;
   fileTree: FileNode[];
   activeFileId: string | null;
-  conversations: Conversation[];
-  activeConversationId: string | null;
 }
 
 export interface ChatMessage {

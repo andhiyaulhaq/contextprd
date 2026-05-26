@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useConversationStore } from '../../store/useConversationStore';
+import { useSessionStore } from '../../store/useSessionStore';
 import { classifyIntent } from '../../lib/ai/skillRouter';
 import { resolveModelEndpoints, ModelRoute } from '../../lib/ai/router';
 import { compileContextPayload } from '../../lib/ai/promptCompiler';
@@ -16,15 +18,18 @@ import { CostTracker } from './CostTracker';
 export const ChatSidebar: React.FC = () => {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const addChatMessage = useWorkspaceStore((s) => s.addChatMessage);
-  const updateChatMessage = useWorkspaceStore((s) => s.updateChatMessage);
-  const deleteChatMessage = useWorkspaceStore((s) => s.deleteChatMessage);
-  const clearChatMessages = useWorkspaceStore((s) => s.clearChatMessages);
-  const addToSessionCost = useWorkspaceStore((s) => s.addToSessionCost);
-  const streamingMessageId = useWorkspaceStore((s) => s.streamingMessageId);
-  const setStreamingMessageId = useWorkspaceStore((s) => s.setStreamingMessageId);
-  const deepAuditMode = useWorkspaceStore((s) => s.deepAuditMode);
-  const createConversation = useWorkspaceStore((s) => s.createConversation);
+
+  const activeConversationId = useConversationStore((s) => s.activeConversationId);
+  const addChatMessage = useConversationStore((s) => s.addChatMessage);
+  const updateChatMessage = useConversationStore((s) => s.updateChatMessage);
+  const deleteChatMessage = useConversationStore((s) => s.deleteChatMessage);
+  const createConversation = useConversationStore((s) => s.createConversation);
+  const getConversationsForWorkspace = useConversationStore((s) => s.getConversationsForWorkspace);
+
+  const streamingMessageId = useSessionStore((s) => s.streamingMessageId);
+  const setStreamingMessageId = useSessionStore((s) => s.setStreamingMessageId);
+  const deepAuditMode = useSessionStore((s) => s.deepAuditMode);
+  const addToSessionCost = useSessionStore((s) => s.addToSessionCost);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { sendQuery, sendSilentQuery, abort } = useAIStream();
@@ -37,9 +42,8 @@ export const ChatSidebar: React.FC = () => {
   const intentRef = useRef('');
 
   const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
-  const activeConversation = workspace
-    ? workspace.conversations.find((c) => c.id === workspace.activeConversationId) || null
-    : null;
+  const allConversations = useConversationStore((s) => s.conversations);
+  const activeConversation = activeConversationId ? allConversations[activeConversationId] : null;
   const messages = activeConversation?.messages || [];
 
   useEffect(() => {
@@ -57,35 +61,35 @@ export const ChatSidebar: React.FC = () => {
     const handleOffline = () => {
       if (streamingMessageId) {
         abort();
-        if (assistantIdRef.current && workspaceIdRef.current) {
-          updateChatMessage(workspaceIdRef.current, assistantIdRef.current, 'Connection lost. Response incomplete.');
+        if (assistantIdRef.current && activeConversationId) {
+          updateChatMessage(activeConversationId, assistantIdRef.current, 'Connection lost. Response incomplete.');
         }
         setStreamingMessageId(null);
       }
     };
     window.addEventListener('offline', handleOffline);
     return () => window.removeEventListener('offline', handleOffline);
-  }, [streamingMessageId]);
+  }, [streamingMessageId, activeConversationId]);
 
   const tryModel = useCallback((modelIndex: number) => {
     const models = modelsRef.current;
     const prompt = promptRef.current;
-    const wsId = workspaceIdRef.current;
     const assistantId = assistantIdRef.current;
+    const convId = useConversationStore.getState().activeConversationId;
 
-    if (!wsId || !assistantId) return;
+    if (!convId || !assistantId) return;
 
     if (modelIndex >= models.length) {
-      updateChatMessage(wsId, assistantId, 'Error: All available models failed. Please try again later.');
+      updateChatMessage(convId, assistantId, 'Error: All available models failed. Please try again later.');
       setStreamingMessageId(null);
       return;
     }
 
     const model = models[modelIndex];
-    updateChatMessage(wsId, assistantId, '');
+    updateChatMessage(convId, assistantId, '');
 
     if (modelIndex > 0) {
-      addChatMessage(wsId, {
+      addChatMessage(convId, {
         id: `msg-${Date.now() + 4 + modelIndex}`,
         role: 'system',
         content: `Falling back to ${model.modelId}...`,
@@ -95,7 +99,7 @@ export const ChatSidebar: React.FC = () => {
 
     sendQuery(prompt, model.modelId, {
       onChunk: (accumulated) => {
-        updateChatMessage(wsId, assistantId, accumulated);
+        updateChatMessage(convId, assistantId, accumulated);
       },
       onComplete: () => {
         setStreamingMessageId(null);
@@ -104,7 +108,7 @@ export const ChatSidebar: React.FC = () => {
         if (streamError.type === 'no_endpoint' || streamError.type === 'rate_limit') {
           tryModel(modelIndex + 1);
         } else {
-          updateChatMessage(wsId, assistantId, `Error: ${streamError.message}`);
+          updateChatMessage(convId, assistantId, `Error: ${streamError.message}`);
           setStreamingMessageId(null);
         }
       },
@@ -114,9 +118,10 @@ export const ChatSidebar: React.FC = () => {
   const handleNewChat = useCallback(() => {
     if (!workspace) return;
     abort();
-    createConversation(workspace.id, `Conversation ${(workspace.conversations.length + 1)}`);
+    const wsConvs = getConversationsForWorkspace(workspace.id);
+    createConversation(workspace.id, `Conversation ${wsConvs.length + 1}`);
     setStreamingMessageId(null);
-  }, [workspace, abort, createConversation, setStreamingMessageId]);
+  }, [workspace, abort, createConversation, getConversationsForWorkspace, setStreamingMessageId]);
 
   const handleMermaidError = useCallback(
     async (
@@ -137,7 +142,7 @@ export const ChatSidebar: React.FC = () => {
         chartDefinition,
         errorString,
         async (repairPrompt) => {
-          const modelId = architectureModels[0]?.modelId || 'openrouter/free';
+          const modelId = architectureModels[0]?.modelId || 'gemini-2.5-flash';
           const { text, error } = await sendSilentQuery(repairPrompt, modelId);
 
           if (error || !text) {
@@ -161,8 +166,8 @@ export const ChatSidebar: React.FC = () => {
 
   const handleSend = useCallback(async (userQuery: string) => {
     if (!workspace || streamingMessageId) return;
-
-    const wsId = workspace.id;
+    const convId = useConversationStore.getState().activeConversationId;
+    if (!convId) return;
 
     const userMessage = {
       id: `msg-${Date.now()}`,
@@ -170,11 +175,11 @@ export const ChatSidebar: React.FC = () => {
       content: userQuery,
       timestamp: Date.now(),
     };
-    addChatMessage(wsId, userMessage);
+    addChatMessage(convId, userMessage);
 
     const activeFile = workspace.fileTree.find((f) => f.id === workspace.activeFileId);
     if (!activeFile) {
-      addChatMessage(wsId, {
+      addChatMessage(convId, {
         id: `msg-${Date.now() + 1}`,
         role: 'system',
         content: 'No active file selected. Please select a file to ask AI about.',
@@ -191,7 +196,7 @@ export const ChatSidebar: React.FC = () => {
     const estimatedCost = (promptTokens / 1_000_000) * models[0].costPerMillionInput;
     addToSessionCost(estimatedCost);
 
-    addChatMessage(wsId, {
+    addChatMessage(convId, {
       id: `msg-${Date.now() + 2}`,
       role: 'system',
       content: `Routing to ${intent} via ${models[0].modelId}...`,
@@ -199,7 +204,7 @@ export const ChatSidebar: React.FC = () => {
     });
 
     const assistantId = `msg-${Date.now() + 3}`;
-    addChatMessage(wsId, {
+    addChatMessage(convId, {
       id: assistantId,
       role: 'assistant',
       content: '',
@@ -208,7 +213,7 @@ export const ChatSidebar: React.FC = () => {
       estimatedCost,
     });
 
-    workspaceIdRef.current = wsId;
+    workspaceIdRef.current = workspace.id;
     assistantIdRef.current = assistantId;
     modelsRef.current = models;
     promptRef.current = prompt;
@@ -239,7 +244,7 @@ export const ChatSidebar: React.FC = () => {
         </svg>
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">AI Chat</span>
         <div className="mx-1 flex-1 min-w-0">
-          <ConversationPicker workspace={workspace} />
+          <ConversationPicker workspaceId={workspace.id} />
         </div>
         <button
           onClick={handleNewChat}
@@ -266,7 +271,7 @@ export const ChatSidebar: React.FC = () => {
             key={msg.id}
             message={msg}
             isStreaming={msg.id === streamingMessageId}
-            onDelete={!isStreaming ? () => deleteChatMessage(workspace.id, msg.id) : undefined}
+            onDelete={!isStreaming && activeConversationId ? () => deleteChatMessage(activeConversationId, msg.id) : undefined}
             onMermaidError={handleMermaidError}
           />
         ))}

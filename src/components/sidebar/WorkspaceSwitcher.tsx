@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useSessionStore } from '../../store/useSessionStore';
 import { DomainCategory } from '../../types/workspace';
 
 const CATEGORIES: { value: DomainCategory; label: string; desc: string }[] = [
@@ -10,6 +11,13 @@ const CATEGORIES: { value: DomainCategory; label: string; desc: string }[] = [
   { value: 'MOBILE_APP', label: 'Mobile App', desc: 'iOS / Android application' },
   { value: 'GENERAL_SAAS', label: 'General SaaS', desc: 'Multi-tenant cloud service' },
 ];
+
+const CATEGORY_LABELS: Record<DomainCategory, string> = {
+  WEB_APP: 'Web App',
+  NATIVE_DESKTOP: 'Desktop',
+  MOBILE_APP: 'Mobile',
+  GENERAL_SAAS: 'SaaS',
+};
 
 const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
@@ -90,27 +98,76 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
 export const WorkspaceSwitcher: React.FC = () => {
   const [showDialog, setShowDialog] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
+  const renameWorkspace = useWorkspaceStore((s) => s.renameWorkspace);
+  const deleteWorkspace = useWorkspaceStore((s) => s.deleteWorkspace);
+  const streamingMessageId = useSessionStore((s) => s.streamingMessageId);
+
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the rename input when editing starts
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
+
+  // Clear confirm-delete state after 3 seconds
+  useEffect(() => {
+    if (!confirmDeleteId) return;
+    const timer = setTimeout(() => setConfirmDeleteId(null), 3000);
+    return () => clearTimeout(timer);
+  }, [confirmDeleteId]);
+
+  const handleStartRename = (e: React.MouseEvent, wsId: string, currentName: string) => {
+    e.stopPropagation();
+    setEditingId(wsId);
+    setEditName(currentName);
+    setConfirmDeleteId(null);
+  };
+
+  const handleFinishRename = (wsId: string) => {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== workspaces[wsId]?.name) {
+      renameWorkspace(wsId, trimmed);
+    }
+    setEditingId(null);
+  };
+
+  const handleDelete = (e: React.MouseEvent, wsId: string) => {
+    e.stopPropagation();
+    if (confirmDeleteId === wsId) {
+      deleteWorkspace(wsId);
+      setConfirmDeleteId(null);
+    } else {
+      setConfirmDeleteId(wsId);
+    }
+  };
+
+  const workspaceList = Object.values(workspaces);
+  const isStreaming = streamingMessageId !== null;
 
   return (
     <>
-      <div className="p-3 border-b border-gray-800 space-y-2">
-        <div className="flex items-center gap-2">
-          <select
-            className="flex-1 bg-gray-800 text-gray-200 text-sm rounded-lg px-3 py-2 border border-gray-700 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
-            value={activeWorkspaceId || ''}
-            onChange={(e) => setActiveWorkspace(e.target.value)}
-          >
-            <option value="" disabled>Select workspace</option>
-            {Object.values(workspaces).map((ws) => (
-              <option key={ws.id} value={ws.id}>{ws.name}</option>
-            ))}
-          </select>
+      <div className="border-b border-gray-800">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Workspaces</span>
+          </div>
           <button
             onClick={() => setShowDialog(true)}
-            className="shrink-0 w-9 h-9 flex items-center justify-center bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/10 transition-all"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all"
             title="New workspace"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -118,6 +175,110 @@ export const WorkspaceSwitcher: React.FC = () => {
             </svg>
           </button>
         </div>
+
+        {/* Workspace List */}
+        {workspaceList.length === 0 ? (
+          <div className="px-3 pb-3">
+            <button
+              onClick={() => setShowDialog(true)}
+              className="w-full py-6 rounded-lg border border-dashed border-gray-700 text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all text-xs text-center"
+            >
+              <svg className="w-6 h-6 mx-auto mb-1.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Create your first workspace
+            </button>
+          </div>
+        ) : (
+          <div className="px-1.5 pb-2 space-y-0.5">
+            {workspaceList.map((ws) => {
+              const isActive = ws.id === activeWorkspaceId;
+              const isEditing = editingId === ws.id;
+              const isConfirmingDelete = confirmDeleteId === ws.id;
+              const canDelete = !(isStreaming && isActive);
+
+              return (
+                <div
+                  key={ws.id}
+                  onClick={() => {
+                    if (!isEditing) {
+                      setActiveWorkspace(ws.id);
+                    }
+                  }}
+                  className={`group relative flex items-start gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${
+                    isActive
+                      ? 'bg-indigo-500/10 border-l-2 border-indigo-500'
+                      : 'border-l-2 border-transparent hover:bg-gray-800/60'
+                  }`}
+                >
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                      <input
+                        ref={editInputRef}
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={() => handleFinishRename(ws.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleFinishRename(ws.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full bg-gray-800 text-gray-200 rounded px-1.5 py-0.5 border border-indigo-500/40 outline-none text-sm -ml-1.5"
+                      />
+                    ) : (
+                      <span className={`block text-sm truncate ${isActive ? 'text-indigo-300 font-medium' : 'text-gray-300'}`}>
+                        {ws.name}
+                      </span>
+                    )}
+                    <span className="block text-[10px] uppercase tracking-wider text-gray-600 mt-0.5">
+                      {CATEGORY_LABELS[ws.profile.category] || ws.profile.category}
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  {!isEditing && (
+                    <span className="flex items-center gap-0.5 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      {/* Rename */}
+                      <button
+                        onClick={(e) => handleStartRename(e, ws.id, ws.name)}
+                        className="p-1 rounded text-gray-600 hover:text-indigo-400 hover:bg-gray-800 transition-all"
+                        title="Rename"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={(e) => handleDelete(e, ws.id)}
+                        disabled={!canDelete}
+                        className={`p-1 rounded transition-all ${
+                          !canDelete
+                            ? 'text-gray-700 cursor-not-allowed'
+                            : isConfirmingDelete
+                              ? 'text-rose-400 bg-rose-500/10'
+                              : 'text-gray-600 hover:text-rose-400 hover:bg-gray-800'
+                        }`}
+                        title={
+                          !canDelete
+                            ? 'Cannot delete while AI is streaming'
+                            : isConfirmingDelete
+                              ? 'Click again to confirm delete'
+                              : 'Delete'
+                        }
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       {showDialog && <CreateWorkspaceDialog onClose={() => setShowDialog(false)} />}
     </>

@@ -1,25 +1,32 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Workspace } from '../../types/workspace';
-import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useConversationStore } from '../../store/useConversationStore';
 
 interface ConversationPickerProps {
-  workspace: Workspace;
+  workspaceId: string;
 }
 
-export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspace }) => {
+export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspaceId }) => {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const switchConversation = useWorkspaceStore((s) => s.switchConversation);
-  const deleteConversation = useWorkspaceStore((s) => s.deleteConversation);
-  const renameConversation = useWorkspaceStore((s) => s.renameConversation);
+  const activeConversationId = useConversationStore((s) => s.activeConversationId);
+  const switchConversation = useConversationStore((s) => s.switchConversation);
+  const deleteConversation = useConversationStore((s) => s.deleteConversation);
+  const renameConversation = useConversationStore((s) => s.renameConversation);
+  const allConversations = useConversationStore((s) => s.conversations);
+  
+  const conversations = React.useMemo(() => {
+    return Object.values(allConversations)
+      .filter((c) => c.workspaceId === workspaceId)
+      .sort((a, b) => a.createdAt - b.createdAt);
+  }, [allConversations, workspaceId]);
 
-  const activeConv = workspace.conversations.find((c) => c.id === workspace.activeConversationId);
+  const activeConv = conversations.find((c) => c.id === activeConversationId);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -36,8 +43,8 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
   }, [open]);
 
   const handleSelect = (convId: string) => {
-    if (convId !== workspace.activeConversationId) {
-      switchConversation(workspace.id, convId);
+    if (convId !== activeConversationId) {
+      switchConversation(convId);
     }
     setOpen(false);
   };
@@ -50,7 +57,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
 
   const handleFinishRename = (convId: string) => {
     if (editName.trim()) {
-      renameConversation(workspace.id, convId, editName.trim());
+      renameConversation(convId, editName.trim());
     }
     setEditingId(null);
   };
@@ -58,7 +65,7 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
   const handleDelete = (e: React.MouseEvent, convId: string) => {
     e.stopPropagation();
     if (confirmDeleteId === convId) {
-      deleteConversation(workspace.id, convId);
+      deleteConversation(convId);
       setConfirmDeleteId(null);
       setOpen(false);
     } else {
@@ -78,11 +85,11 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
 
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
-          {workspace.conversations.length === 0 && (
+          {conversations.length === 0 && (
             <div className="px-3 py-4 text-xs text-gray-500 text-center">No conversations</div>
           )}
-          {workspace.conversations.map((conv) => {
-            const isActive = conv.id === workspace.activeConversationId;
+          {conversations.map((conv) => {
+            const isActive = conv.id === activeConversationId;
             return (
               <div
                 key={conv.id}

@@ -1,119 +1,118 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
+import { useConversationStore } from '../store/useConversationStore';
 import { ChatMessage } from '../types/workspace';
 
 beforeEach(() => {
   useWorkspaceStore.setState({
     workspaces: {},
     activeWorkspaceId: null,
-    sessionCost: 0,
-    streamingMessageId: null,
-    deepAuditMode: false,
-    sidebarOpen: true,
+  });
+  useConversationStore.setState({
+    conversations: {},
+    activeConversationId: null,
   });
 });
 
 describe('Conversation CRUD', () => {
   it('creates a workspace with a default conversation', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const ws = useWorkspaceStore.getState().workspaces[wsId];
-    expect(ws.conversations).toHaveLength(1);
-    expect(ws.conversations[0].name).toBe('Conversation 1');
-    expect(ws.activeConversationId).toBe(ws.conversations[0].id);
-    expect(ws.conversations[0].messages).toEqual([]);
+    const convs = useConversationStore.getState().getConversationsForWorkspace(wsId);
+    expect(convs).toHaveLength(1);
+    expect(convs[0].name).toBe('Conversation 1');
+    expect(useConversationStore.getState().activeConversationId).toBe(convs[0].id);
+    expect(convs[0].messages).toEqual([]);
   });
 
   it('adds a message to the active conversation', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'GENERAL_SAAS');
+    const convId = useConversationStore.getState().activeConversationId!;
     const msg: ChatMessage = { id: 'msg-1', role: 'user', content: 'hello', timestamp: Date.now() };
-    useWorkspaceStore.getState().addChatMessage(wsId, msg);
+    useConversationStore.getState().addChatMessage(convId, msg);
 
-    const ws = useWorkspaceStore.getState().workspaces[wsId];
-    const activeConv = ws.conversations.find((c) => c.id === ws.activeConversationId);
+    const activeConv = useConversationStore.getState().getActiveConversation();
     expect(activeConv?.messages).toHaveLength(1);
     expect(activeConv?.messages[0].content).toBe('hello');
   });
 
   it('creates and switches to a new conversation', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const firstConvId = useWorkspaceStore.getState().workspaces[wsId].activeConversationId;
+    const firstConvId = useConversationStore.getState().activeConversationId;
 
-    const conv2Id = useWorkspaceStore.getState().createConversation(wsId, 'My New Chat');
-    const ws = useWorkspaceStore.getState().workspaces[wsId];
-    expect(ws.conversations).toHaveLength(2);
-    expect(ws.activeConversationId).toBe(conv2Id);
-    expect(ws.activeConversationId).not.toBe(firstConvId);
+    const conv2Id = useConversationStore.getState().createConversation(wsId, 'My New Chat');
+    const convs = useConversationStore.getState().getConversationsForWorkspace(wsId);
+    expect(convs).toHaveLength(2);
+    expect(useConversationStore.getState().activeConversationId).toBe(conv2Id);
+    expect(useConversationStore.getState().activeConversationId).not.toBe(firstConvId);
   });
 
   it('switches active conversation', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'MOBILE_APP');
-    const conv1Id = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
+    const conv1Id = useConversationStore.getState().activeConversationId!;
 
-    const conv2Id = useWorkspaceStore.getState().createConversation(wsId, 'Second');
-    useWorkspaceStore.getState().switchConversation(wsId, conv1Id);
-    expect(useWorkspaceStore.getState().workspaces[wsId].activeConversationId).toBe(conv1Id);
+    useConversationStore.getState().createConversation(wsId, 'Second');
+    useConversationStore.getState().switchConversation(conv1Id);
+    expect(useConversationStore.getState().activeConversationId).toBe(conv1Id);
   });
 
   it('ignores switching to non-existent conversation', () => {
-    const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'NATIVE_DESKTOP');
-    const currentId = useWorkspaceStore.getState().workspaces[wsId].activeConversationId;
+    useWorkspaceStore.getState().createWorkspace('Test', 'NATIVE_DESKTOP');
+    const currentId = useConversationStore.getState().activeConversationId;
 
-    useWorkspaceStore.getState().switchConversation(wsId, 'non-existent');
-    expect(useWorkspaceStore.getState().workspaces[wsId].activeConversationId).toBe(currentId);
+    useConversationStore.getState().switchConversation('non-existent');
+    expect(useConversationStore.getState().activeConversationId).toBe(currentId);
   });
 
   it('renames a conversation', () => {
-    const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const convId = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
+    useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
+    const convId = useConversationStore.getState().activeConversationId!;
 
-    useWorkspaceStore.getState().renameConversation(wsId, convId, 'Renamed Chat');
-    const conv = useWorkspaceStore.getState().workspaces[wsId].conversations.find((c) => c.id === convId);
+    useConversationStore.getState().renameConversation(convId, 'Renamed Chat');
+    const conv = useConversationStore.getState().conversations[convId];
     expect(conv?.name).toBe('Renamed Chat');
   });
 
   it('deletes last conversation and falls back to a fresh one', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const convId = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
+    const convId = useConversationStore.getState().activeConversationId!;
 
-    useWorkspaceStore.getState().deleteConversation(wsId, convId);
-    const ws = useWorkspaceStore.getState().workspaces[wsId];
-    expect(ws.conversations).toHaveLength(1);
-    expect(ws.activeConversationId).toBe(ws.conversations[0].id);
-    expect(ws.conversations[0].messages).toEqual([]);
+    useConversationStore.getState().deleteConversation(convId);
+    const convs = useConversationStore.getState().getConversationsForWorkspace(wsId);
+    expect(convs).toHaveLength(1);
+    expect(useConversationStore.getState().activeConversationId).toBe(convs[0].id);
+    expect(convs[0].messages).toEqual([]);
   });
 
   it('deletes a non-active conversation without switching', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const conv1Id = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
-    useWorkspaceStore.getState().createConversation(wsId, 'Second');
-    const conv2Id = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
+    const conv1Id = useConversationStore.getState().activeConversationId!;
+    useConversationStore.getState().createConversation(wsId, 'Second');
+    const conv2Id = useConversationStore.getState().activeConversationId!;
 
-    useWorkspaceStore.getState().deleteConversation(wsId, conv1Id);
-    const ws = useWorkspaceStore.getState().workspaces[wsId];
-    expect(ws.conversations).toHaveLength(1);
-    expect(ws.activeConversationId).toBe(conv2Id);
+    useConversationStore.getState().deleteConversation(conv1Id);
+    const convs = useConversationStore.getState().getConversationsForWorkspace(wsId);
+    expect(convs).toHaveLength(1);
+    expect(useConversationStore.getState().activeConversationId).toBe(conv2Id);
   });
 
   it('messages are isolated between conversations', () => {
     const wsId = useWorkspaceStore.getState().createWorkspace('Test', 'WEB_APP');
-    const conv1Id = useWorkspaceStore.getState().workspaces[wsId].activeConversationId!;
+    const conv1Id = useConversationStore.getState().activeConversationId!;
 
-    useWorkspaceStore.getState().addChatMessage(wsId, {
+    useConversationStore.getState().addChatMessage(conv1Id, {
       id: 'msg-1', role: 'user', content: 'in conv1', timestamp: Date.now(),
     });
 
-    const conv2Id = useWorkspaceStore.getState().createConversation(wsId, 'Second');
-    useWorkspaceStore.getState().addChatMessage(wsId, {
+    const conv2Id = useConversationStore.getState().createConversation(wsId, 'Second');
+    useConversationStore.getState().addChatMessage(conv2Id, {
       id: 'msg-2', role: 'user', content: 'in conv2', timestamp: Date.now(),
     });
 
-    useWorkspaceStore.getState().switchConversation(wsId, conv1Id);
-    const conv1 = useWorkspaceStore.getState().workspaces[wsId].conversations.find((c) => c.id === conv1Id);
+    const conv1 = useConversationStore.getState().conversations[conv1Id];
     expect(conv1?.messages).toHaveLength(1);
     expect(conv1?.messages[0].content).toBe('in conv1');
 
-    useWorkspaceStore.getState().switchConversation(wsId, conv2Id);
-    const conv2 = useWorkspaceStore.getState().workspaces[wsId].conversations.find((c) => c.id === conv2Id);
+    const conv2 = useConversationStore.getState().conversations[conv2Id];
     expect(conv2?.messages).toHaveLength(1);
     expect(conv2?.messages[0].content).toBe('in conv2');
   });
