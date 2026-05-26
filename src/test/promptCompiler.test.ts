@@ -22,7 +22,8 @@ describe('compileContextPayload', () => {
     },
     fileTree: [mockFile],
     activeFileId: 'file-1',
-    chatMessages: [],
+    conversations: [],
+    activeConversationId: null,
   };
 
   it('includes workspace metadata in headers', () => {

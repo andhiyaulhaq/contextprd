@@ -1,0 +1,146 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Workspace } from '../../types/workspace';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+
+interface ConversationPickerProps {
+  workspace: Workspace;
+}
+
+export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspace }) => {
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const switchConversation = useWorkspaceStore((s) => s.switchConversation);
+  const deleteConversation = useWorkspaceStore((s) => s.deleteConversation);
+  const renameConversation = useWorkspaceStore((s) => s.renameConversation);
+
+  const activeConv = workspace.conversations.find((c) => c.id === workspace.activeConversationId);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setEditingId(null);
+        setConfirmDeleteId(null);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const handleSelect = (convId: string) => {
+    if (convId !== workspace.activeConversationId) {
+      switchConversation(workspace.id, convId);
+    }
+    setOpen(false);
+  };
+
+  const handleStartRename = (e: React.MouseEvent, convId: string, currentName: string) => {
+    e.stopPropagation();
+    setEditingId(convId);
+    setEditName(currentName);
+  };
+
+  const handleFinishRename = (convId: string) => {
+    if (editName.trim()) {
+      renameConversation(workspace.id, convId, editName.trim());
+    }
+    setEditingId(null);
+  };
+
+  const handleDelete = (e: React.MouseEvent, convId: string) => {
+    e.stopPropagation();
+    if (confirmDeleteId === convId) {
+      deleteConversation(workspace.id, convId);
+      setConfirmDeleteId(null);
+      setOpen(false);
+    } else {
+      setConfirmDeleteId(convId);
+    }
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left text-xs text-gray-400 hover:text-gray-300 truncate bg-gray-800/40 rounded px-2 py-1 border border-gray-700/40 hover:border-gray-600/50 transition-all"
+        title={activeConv?.name || 'No conversation'}
+      >
+        {activeConv?.name || 'Conversation'}
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+          {workspace.conversations.length === 0 && (
+            <div className="px-3 py-4 text-xs text-gray-500 text-center">No conversations</div>
+          )}
+          {workspace.conversations.map((conv) => {
+            const isActive = conv.id === workspace.activeConversationId;
+            return (
+              <div
+                key={conv.id}
+                onClick={() => handleSelect(conv.id)}
+                className={`group flex items-center gap-1 px-3 py-2 cursor-pointer text-xs transition-all ${
+                  isActive
+                    ? 'bg-indigo-500/10 text-indigo-300'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                }`}
+              >
+                {editingId === conv.id ? (
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => handleFinishRename(conv.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFinishRename(conv.id);
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="flex-1 bg-gray-800 text-gray-200 rounded px-1.5 py-0.5 border border-indigo-500/40 outline-none text-xs"
+                  />
+                ) : (
+                  <span className="flex-1 truncate">{conv.name}</span>
+                )}
+
+                {editingId !== conv.id && (
+                  <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleStartRename(e, conv.id, conv.name)}
+                      className="p-0.5 text-gray-600 hover:text-indigo-400"
+                      title="Rename"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, conv.id)}
+                      className={`p-0.5 transition-all ${
+                        confirmDeleteId === conv.id
+                          ? 'text-rose-400'
+                          : 'text-gray-600 hover:text-rose-400'
+                      }`}
+                      title={confirmDeleteId === conv.id ? 'Click again to confirm' : 'Delete'}
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};

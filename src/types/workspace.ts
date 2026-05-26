@@ -15,6 +15,14 @@ export interface DomainProfile {
   templateBlueprint: Record<string, string>;
 }
 
+export interface Conversation {
+  id: string;
+  name: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -22,7 +30,8 @@ export interface Workspace {
   profile: DomainProfile;
   fileTree: FileNode[];
   activeFileId: string | null;
-  chatMessages: ChatMessage[];
+  conversations: Conversation[];
+  activeConversationId: string | null;
 }
 
 export interface ChatMessage {
