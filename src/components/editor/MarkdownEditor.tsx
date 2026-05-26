@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useProjectStore } from '../../store/useProjectStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -37,13 +37,13 @@ const draftHighlightField = StateField.define<DecorationSet>({
 });
 
 export const MarkdownEditor: React.FC = () => {
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const updateFileContent = useWorkspaceStore((s) => s.updateFileContent);
+  const projects = useProjectStore((s) => s.projects);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const updateFileContent = useProjectStore((s) => s.updateFileContent);
 
-  const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
-  const activeFile = workspace
-    ? workspace.fileTree.find((f) => f.id === workspace.activeFileId)
+  const project = activeProjectId ? projects[activeProjectId] : null;
+  const activeFile = project
+    ? project.fileTree.find((f) => f.id === project.activeFileId)
     : null;
 
   const [localContent, setLocalContent] = useState(activeFile?.content || '');
@@ -80,7 +80,7 @@ export const MarkdownEditor: React.FC = () => {
     if (!activeFile || draftState !== 'idle') return;
     const timer = setTimeout(() => {
       if (localContent !== activeFile.content) {
-        updateFileContent(workspace!.id, activeFile.id, localContent);
+        updateFileContent(project!.id, activeFile.id, localContent);
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -101,18 +101,18 @@ export const MarkdownEditor: React.FC = () => {
         changes: { from: selection.from, to: selection.to, insert: e.detail.text }
       });
       
-      if (workspace && activeFile) {
+      if (project && activeFile) {
         // We delay the update slightly to ensure the view state has updated
         setTimeout(() => {
           const finalContent = view.state.doc.toString();
-          updateFileContent(workspace.id, activeFile.id, finalContent);
+          updateFileContent(project.id, activeFile.id, finalContent);
         }, 50);
       }
     };
     
     window.addEventListener('insert-editor-text', handleInsert as EventListener);
     return () => window.removeEventListener('insert-editor-text', handleInsert as EventListener);
-  }, [workspace, activeFile, updateFileContent]);
+  }, [project, activeFile, updateFileContent]);
 
   const handleChange = useCallback((value: string) => {
     setLocalContent(value);
@@ -131,7 +131,7 @@ export const MarkdownEditor: React.FC = () => {
   }, [showCmdK, draftState]);
 
   const executeCmdK = () => {
-    if (!cmdKQuery.trim() || !editorRef.current?.view || !activeFile || !workspace) return;
+    if (!cmdKQuery.trim() || !editorRef.current?.view || !activeFile || !project) return;
     
     setShowCmdK(false);
     setDraftState('streaming');
@@ -201,9 +201,9 @@ export const MarkdownEditor: React.FC = () => {
     draftRangeRef.current = null;
     draftOriginalRef.current = null;
     
-    if (workspace && activeFile) {
+    if (project && activeFile) {
       const finalContent = view.state.doc.toString();
-      updateFileContent(workspace.id, activeFile.id, finalContent);
+      updateFileContent(project.id, activeFile.id, finalContent);
     }
   };
 

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useProjectStore } from '../../store/useProjectStore';
 import { useSessionStore } from '../../store/useSessionStore';
-import { DomainCategory } from '../../types/workspace';
+import { DomainCategory } from '../../types/project';
 
 const CATEGORIES: { value: DomainCategory; label: string; desc: string }[] = [
   { value: 'WEB_APP', label: 'Web App', desc: 'Browser-based SaaS application' },
@@ -19,8 +19,8 @@ const CATEGORY_LABELS: Record<DomainCategory, string> = {
   GENERAL_SAAS: 'SaaS',
 };
 
-const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
+const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const createProject = useProjectStore((s) => s.createProject);
   const [name, setName] = useState('');
   const [category, setCategory] = useState<DomainCategory>('WEB_APP');
   const [error, setError] = useState('');
@@ -29,10 +29,10 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Workspace name is required');
+      setError('Project name is required');
       return;
     }
-    createWorkspace(trimmed, category);
+    createProject(trimmed, category);
     onClose();
   };
 
@@ -40,8 +40,8 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-800">
-          <h2 className="text-sm font-semibold text-gray-200">New Workspace</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Create a new PRD workspace</p>
+          <h2 className="text-sm font-semibold text-gray-200">New Project</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create a new PRD project</p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
@@ -96,21 +96,21 @@ const CreateWorkspaceDialog: React.FC<{ onClose: () => void }> = ({ onClose }) =
   );
 };
 
-const DeleteWorkspaceDialog: React.FC<{
-  workspaceName: string;
+const DeleteProjectDialog: React.FC<{
+  projectName: string;
   onClose: () => void;
   onConfirm: () => void;
-}> = ({ workspaceName, onClose, onConfirm }) => {
+}> = ({ projectName, onClose, onConfirm }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-800">
-          <h2 className="text-sm font-semibold text-gray-200">Delete Workspace</h2>
+          <h2 className="text-sm font-semibold text-gray-200">Delete Project</h2>
           <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone.</p>
         </div>
         <div className="p-5 space-y-4">
           <p className="text-sm text-gray-300">
-            Are you sure you want to delete the workspace <strong className="text-gray-100">{workspaceName}</strong>?
+            Are you sure you want to delete the project <strong className="text-gray-100">{projectName}</strong>?
           </p>
           <div className="flex gap-2 pt-1">
             <button
@@ -133,17 +133,17 @@ const DeleteWorkspaceDialog: React.FC<{
   );
 };
 
-export const WorkspaceSwitcher: React.FC = () => {
+export const ProjectSwitcher: React.FC = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [deleteDialogWsId, setDeleteDialogWsId] = useState<string | null>(null);
 
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
-  const renameWorkspace = useWorkspaceStore((s) => s.renameWorkspace);
-  const deleteWorkspace = useWorkspaceStore((s) => s.deleteWorkspace);
+  const projects = useProjectStore((s) => s.projects);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const setActiveProject = useProjectStore((s) => s.setActiveProject);
+  const renameProject = useProjectStore((s) => s.renameProject);
+  const deleteProject = useProjectStore((s) => s.deleteProject);
   const streamingMessageId = useSessionStore((s) => s.streamingMessageId);
 
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -164,8 +164,8 @@ export const WorkspaceSwitcher: React.FC = () => {
 
   const handleFinishRename = (wsId: string) => {
     const trimmed = editName.trim();
-    if (trimmed && trimmed !== workspaces[wsId]?.name) {
-      renameWorkspace(wsId, trimmed);
+    if (trimmed && trimmed !== projects[wsId]?.name) {
+      renameProject(wsId, trimmed);
     }
     setEditingId(null);
   };
@@ -177,12 +177,12 @@ export const WorkspaceSwitcher: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (deleteDialogWsId) {
-      deleteWorkspace(deleteDialogWsId);
+      deleteProject(deleteDialogWsId);
       setDeleteDialogWsId(null);
     }
   };
 
-  const workspaceList = Object.values(workspaces);
+  const projectList = Object.values(projects);
   const isStreaming = streamingMessageId !== null;
 
   return (
@@ -194,12 +194,12 @@ export const WorkspaceSwitcher: React.FC = () => {
             <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Workspaces</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</span>
           </div>
           <button
             onClick={() => setShowDialog(true)}
             className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all hover:scale-105 active:scale-95"
-            title="New Workspace"
+            title="New Project"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -207,8 +207,8 @@ export const WorkspaceSwitcher: React.FC = () => {
           </button>
         </div>
 
-        {/* Workspace List */}
-        {workspaceList.length === 0 ? (
+        {/* Project List */}
+        {projectList.length === 0 ? (
           <div className="px-3 pb-3">
             <button
               onClick={() => setShowDialog(true)}
@@ -217,13 +217,13 @@ export const WorkspaceSwitcher: React.FC = () => {
               <svg className="w-6 h-6 mx-auto mb-1.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              Create your first workspace
+              Create your first project
             </button>
           </div>
         ) : (
           <div className="px-1.5 pb-2 space-y-0.5">
-            {workspaceList.map((ws) => {
-              const isActive = ws.id === activeWorkspaceId;
+            {projectList.map((ws) => {
+              const isActive = ws.id === activeProjectId;
               const isEditing = editingId === ws.id;
               const canDelete = !(isStreaming && isActive);
 
@@ -232,7 +232,7 @@ export const WorkspaceSwitcher: React.FC = () => {
                   key={ws.id}
                   onClick={() => {
                     if (!isEditing) {
-                      setActiveWorkspace(ws.id);
+                      setActiveProject(ws.id);
                     }
                   }}
                   className={`group relative flex items-start gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${
@@ -306,10 +306,10 @@ export const WorkspaceSwitcher: React.FC = () => {
           </div>
         )}
       </div>
-      {showDialog && <CreateWorkspaceDialog onClose={() => setShowDialog(false)} />}
+      {showDialog && <CreateProjectDialog onClose={() => setShowDialog(false)} />}
       {deleteDialogWsId && (
-        <DeleteWorkspaceDialog
-          workspaceName={workspaces[deleteDialogWsId]?.name || ''}
+        <DeleteProjectDialog
+          projectName={projects[deleteDialogWsId]?.name || ''}
           onClose={() => setDeleteDialogWsId(null)}
           onConfirm={handleConfirmDelete}
         />

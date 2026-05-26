@@ -4,10 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useConversationStore } from '../../store/useConversationStore';
 
 interface ConversationPickerProps {
-  workspaceId: string;
+  projectId: string;
 }
 
-export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspaceId }) => {
+export const ConversationPicker: React.FC<ConversationPickerProps> = ({ projectId }) => {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -22,9 +22,9 @@ export const ConversationPicker: React.FC<ConversationPickerProps> = ({ workspac
 
   const conversations = React.useMemo(() => {
     return Object.values(allConversations)
-      .filter((c) => c.workspaceId === workspaceId)
+      .filter((c) => c.projectId === projectId)
       .sort((a, b) => a.createdAt - b.createdAt);
-  }, [allConversations, workspaceId]);
+  }, [allConversations, projectId]);
 
   const activeConv = conversations.find((c) => c.id === activeConversationId);
 

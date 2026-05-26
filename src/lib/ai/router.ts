@@ -1,4 +1,4 @@
-import { SkillIntent } from '../../types/workspace';
+import { SkillIntent } from '../../types/project';
 
 export interface ModelRoute {
   modelId: string;

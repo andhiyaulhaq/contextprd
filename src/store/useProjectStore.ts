@@ -2,26 +2,26 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { idbStorage } from '../lib/storage/idbStorage';
 import { temporal } from 'zundo';
-import { Workspace, DomainCategory } from '../types/workspace';
+import { Project, DomainCategory } from '../types/project';
 import { blueprintToFileTree } from '../lib/templates/blueprints';
 import { useConversationStore } from './useConversationStore';
-import { FileNode } from '../types/workspace';
+import { FileNode } from '../types/project';
 
-export interface WorkspaceState {
-  workspaces: Record<string, Workspace>;
-  activeWorkspaceId: string | null;
+export interface ProjectState {
+  projects: Record<string, Project>;
+  activeProjectId: string | null;
   hasHydrated: boolean;
 
   setHasHydrated: (state: boolean) => void;
-  setActiveWorkspace: (id: string) => void;
-  createWorkspace: (name: string, category: DomainCategory) => string;
-  renameWorkspace: (id: string, name: string) => void;
-  deleteWorkspace: (id: string) => void;
-  setActiveFile: (workspaceId: string, fileId: string) => void;
-  createFile: (workspaceId: string, name: string) => string;
-  renameFile: (workspaceId: string, fileId: string, newName: string) => void;
-  deleteFile: (workspaceId: string, fileId: string) => void;
-  updateFileContent: (workspaceId: string, fileId: string, updatedContent: string) => void;
+  setActiveProject: (id: string) => void;
+  createProject: (name: string, category: DomainCategory) => string;
+  renameProject: (id: string, name: string) => void;
+  deleteProject: (id: string) => void;
+  setActiveFile: (projectId: string, fileId: string) => void;
+  createFile: (projectId: string, name: string) => string;
+  renameFile: (projectId: string, fileId: string, newName: string) => void;
+  deleteFile: (projectId: string, fileId: string) => void;
+  updateFileContent: (projectId: string, fileId: string, updatedContent: string) => void;
 }
 
 const updateNode = (nodes: FileNode[], fileId: string, content: string): FileNode[] =>
@@ -31,30 +31,30 @@ const updateNode = (nodes: FileNode[], fileId: string, content: string): FileNod
     return node;
   });
 
-export const useWorkspaceStore = create<WorkspaceState>()(
+export const useProjectStore = create<ProjectState>()(
   persist(
     temporal(
       (set) => ({
-        workspaces: {},
-        activeWorkspaceId: null,
+        projects: {},
+        activeProjectId: null,
         hasHydrated: false,
 
         setHasHydrated: (state) => set({ hasHydrated: state }),
 
-        setActiveWorkspace: (id) => {
-          set({ activeWorkspaceId: id });
+        setActiveProject: (id) => {
+          set({ activeProjectId: id });
           const convStore = useConversationStore.getState();
-          const convs = convStore.getConversationsForWorkspace(id);
+          const convs = convStore.getConversationsForProject(id);
           if (convs.length > 0) {
             convStore.switchConversation(convs[0].id);
           }
         },
 
-        createWorkspace: (name, category) => {
+        createProject: (name, category) => {
           const id = `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
           const fileTree = blueprintToFileTree(category);
 
-          const workspace: Workspace = {
+          const project: Project = {
             id,
             name,
             rootPath: `/${name.toLowerCase().replace(/\s+/g, '-')}`,
@@ -68,8 +68,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           };
 
           set((state) => ({
-            workspaces: { ...state.workspaces, [id]: workspace },
-            activeWorkspaceId: id,
+            projects: { ...state.projects, [id]: project },
+            activeProjectId: id,
           }));
 
           // Create default conversation in conversation store
@@ -78,74 +78,74 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           return id;
         },
 
-        renameWorkspace: (id, name) =>
+        renameProject: (id, name) =>
           set((state) => {
-            const workspace = state.workspaces[id];
-            if (!workspace) return state;
+            const project = state.projects[id];
+            if (!project) return state;
             return {
-              workspaces: {
-                ...state.workspaces,
-                [id]: { ...workspace, name },
+              projects: {
+                ...state.projects,
+                [id]: { ...project, name },
               },
             };
           }),
 
-        deleteWorkspace: (id) => {
+        deleteProject: (id) => {
           let nextId: string | null = null;
           
           set((state) => {
-            const { [id]: _removed, ...remaining } = state.workspaces;
+            const { [id]: _removed, ...remaining } = state.projects;
             const remainingIds = Object.keys(remaining);
-            nextId = state.activeWorkspaceId === id ? remainingIds[0] || null : state.activeWorkspaceId;
+            nextId = state.activeProjectId === id ? remainingIds[0] || null : state.activeProjectId;
             return {
-              workspaces: remaining,
-              activeWorkspaceId: nextId,
+              projects: remaining,
+              activeProjectId: nextId,
             };
           });
 
           // Clean up conversations AFTER state update to avoid intermediate inconsistent reads
           const convStore = useConversationStore.getState();
-          convStore.deleteConversationsForWorkspace(id);
+          convStore.deleteConversationsForProject(id);
 
           if (nextId) {
-            const convs = convStore.getConversationsForWorkspace(nextId);
+            const convs = convStore.getConversationsForProject(nextId);
             if (convs.length > 0) {
               convStore.switchConversation(convs[0].id);
             }
           }
         },
 
-        setActiveFile: (workspaceId, fileId) =>
+        setActiveFile: (projectId, fileId) =>
           set((state) => {
-            const workspace = state.workspaces[workspaceId];
-            if (!workspace) return state;
+            const project = state.projects[projectId];
+            if (!project) return state;
             return {
-              workspaces: {
-                ...state.workspaces,
-                [workspaceId]: { ...workspace, activeFileId: fileId },
+              projects: {
+                ...state.projects,
+                [projectId]: { ...project, activeFileId: fileId },
               },
             };
           }),
 
-        createFile: (workspaceId, name) => {
+        createFile: (projectId, name) => {
           let newId = '';
           set((state) => {
-            const workspace = state.workspaces[workspaceId];
-            if (!workspace) return state;
+            const project = state.projects[projectId];
+            if (!project) return state;
             const newFile: FileNode = {
               id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               name,
-              path: `${workspace.rootPath}/${name}`,
+              path: `${project.rootPath}/${name}`,
               type: 'markdown',
               content: `# ${name.replace(/\.md$/i, '')}\n\n`,
             };
             newId = newFile.id;
             return {
-              workspaces: {
-                ...state.workspaces,
-                [workspaceId]: {
-                  ...workspace,
-                  fileTree: [...workspace.fileTree, newFile],
+              projects: {
+                ...state.projects,
+                [projectId]: {
+                  ...project,
+                  fileTree: [...project.fileTree, newFile],
                   activeFileId: newFile.id,
                 },
               },
@@ -154,10 +154,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           return newId;
         },
 
-        renameFile: (workspaceId, fileId, newName) =>
+        renameFile: (projectId, fileId, newName) =>
           set((state) => {
-            const workspace = state.workspaces[workspaceId];
-            if (!workspace) return state;
+            const project = state.projects[projectId];
+            if (!project) return state;
             
             const renameNode = (nodes: FileNode[]): FileNode[] =>
               nodes.map((node) => {
@@ -165,7 +165,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                   return {
                     ...node,
                     name: newName,
-                    path: node.path ? node.path.replace(/[^/]+$/, newName) : `${workspace.rootPath}/${newName}`
+                    path: node.path ? node.path.replace(/[^/]+$/, newName) : `${project.rootPath}/${newName}`
                   };
                 }
                 if (node.children) return { ...node, children: renameNode(node.children) };
@@ -173,29 +173,29 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               });
 
             return {
-              workspaces: {
-                ...state.workspaces,
-                [workspaceId]: {
-                  ...workspace,
-                  fileTree: renameNode(workspace.fileTree),
+              projects: {
+                ...state.projects,
+                [projectId]: {
+                  ...project,
+                  fileTree: renameNode(project.fileTree),
                 },
               },
             };
           }),
 
-        deleteFile: (workspaceId, fileId) =>
+        deleteFile: (projectId, fileId) =>
           set((state) => {
-            const workspace = state.workspaces[workspaceId];
-            if (!workspace) return state;
+            const project = state.projects[projectId];
+            if (!project) return state;
             
             const deleteNode = (nodes: FileNode[]): FileNode[] =>
               nodes.filter(node => node.id !== fileId)
                    .map(node => node.children ? { ...node, children: deleteNode(node.children) } : node);
 
-            const newFileTree = deleteNode(workspace.fileTree);
+            const newFileTree = deleteNode(project.fileTree);
             // If the active file is deleted, try to select another file if possible
-            let newActiveFileId = workspace.activeFileId;
-            if (workspace.activeFileId === fileId) {
+            let newActiveFileId = project.activeFileId;
+            if (project.activeFileId === fileId) {
               const findFirstFile = (nodes: FileNode[]): string | null => {
                 for (const node of nodes) {
                   if (node.type === 'markdown') return node.id;
@@ -210,10 +210,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             }
 
             return {
-              workspaces: {
-                ...state.workspaces,
-                [workspaceId]: {
-                  ...workspace,
+              projects: {
+                ...state.projects,
+                [projectId]: {
+                  ...project,
                   fileTree: newFileTree,
                   activeFileId: newActiveFileId,
                 },
@@ -221,16 +221,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             };
           }),
 
-        updateFileContent: (workspaceId, fileId, updatedContent) =>
+        updateFileContent: (projectId, fileId, updatedContent) =>
           set((state) => {
-            const workspace = state.workspaces[workspaceId];
-            if (!workspace) return state;
+            const project = state.projects[projectId];
+            if (!project) return state;
             return {
-              workspaces: {
-                ...state.workspaces,
-                [workspaceId]: {
-                  ...workspace,
-                  fileTree: updateNode(workspace.fileTree, fileId, updatedContent),
+              projects: {
+                ...state.projects,
+                [projectId]: {
+                  ...project,
+                  fileTree: updateNode(project.fileTree, fileId, updatedContent),
                 },
               },
             };
@@ -239,22 +239,22 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       {
         limit: 50,
         partialize: (state) => ({
-          workspaces: state.workspaces,
-          activeWorkspaceId: state.activeWorkspaceId,
+          projects: state.projects,
+          activeProjectId: state.activeProjectId,
         }),
       }
     ),
     {
-      name: 'context-prd-storage',
+      name: 'context-prd-projects',
       storage: idbStorage,
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-      merge: (persisted: any, current: WorkspaceState) => {
-        const workspaces: Record<string, Workspace> = {};
+      merge: (persisted: any, current: ProjectState) => {
+        const projects: Record<string, Project> = {};
 
-        // Migrate old data: strip conversations from workspace objects
-        for (const [id, ws] of Object.entries(persisted?.workspaces || {})) {
+        // Migrate old data: strip conversations from project objects
+        for (const [id, ws] of Object.entries(persisted?.projects || {})) {
           const rawWs = ws as any;
 
           // Migrate conversations to the conversation store if they exist in old format
@@ -265,7 +265,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 useConversationStore.setState((state) => ({
                   conversations: {
                     ...state.conversations,
-                    [conv.id]: { ...conv, workspaceId: id },
+                    [conv.id]: { ...conv, projectId: id },
                   },
                   activeConversationId: state.activeConversationId || conv.id,
                 }));
@@ -273,15 +273,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             }
           }
 
-          // Strip conversation fields from workspace
+          // Strip conversation fields from project
           const { conversations: _c, activeConversationId: _a, chatMessages: _m, ...cleanWs } = rawWs;
-          workspaces[id] = cleanWs as Workspace;
+          projects[id] = cleanWs as Project;
         }
 
         return {
           ...current,
           ...persisted,
-          workspaces,
+          projects,
         };
       },
     }

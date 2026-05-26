@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useProjectStore } from '../../store/useProjectStore';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useSessionStore } from '../../store/useSessionStore';
 import { classifyIntent } from '../../lib/ai/skillRouter';
@@ -16,15 +16,15 @@ import { ConversationPicker } from './ConversationPicker';
 import { CostTracker } from './CostTracker';
 
 export const ChatSidebar: React.FC = () => {
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const projects = useProjectStore((s) => s.projects);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
 
   const activeConversationId = useConversationStore((s) => s.activeConversationId);
   const addChatMessage = useConversationStore((s) => s.addChatMessage);
   const updateChatMessage = useConversationStore((s) => s.updateChatMessage);
   const deleteChatMessage = useConversationStore((s) => s.deleteChatMessage);
   const createConversation = useConversationStore((s) => s.createConversation);
-  const getConversationsForWorkspace = useConversationStore((s) => s.getConversationsForWorkspace);
+  const getConversationsForProject = useConversationStore((s) => s.getConversationsForProject);
 
   const streamingMessageId = useSessionStore((s) => s.streamingMessageId);
   const setStreamingMessageId = useSessionStore((s) => s.setStreamingMessageId);
@@ -38,10 +38,10 @@ export const ChatSidebar: React.FC = () => {
   const assistantIdRef = useRef<string | null>(null);
   const modelsRef = useRef<ModelRoute[]>([]);
   const promptRef = useRef('');
-  const workspaceIdRef = useRef<string | null>(null);
+  const projectIdRef = useRef<string | null>(null);
   const intentRef = useRef('');
 
-  const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
+  const project = activeProjectId ? projects[activeProjectId] : null;
   const allConversations = useConversationStore((s) => s.conversations);
   const activeConversation = activeConversationId ? allConversations[activeConversationId] : null;
   const messages = activeConversation?.messages || [];
@@ -55,7 +55,7 @@ export const ChatSidebar: React.FC = () => {
       abort();
       setStreamingMessageId(null);
     }
-  }, [activeWorkspaceId]);
+  }, [activeProjectId]);
 
   useEffect(() => {
     const handleOffline = () => {
@@ -116,12 +116,12 @@ export const ChatSidebar: React.FC = () => {
   }, [addChatMessage, updateChatMessage, setStreamingMessageId, sendQuery]);
 
   const handleNewChat = useCallback(() => {
-    if (!workspace) return;
+    if (!project) return;
     abort();
-    const wsConvs = getConversationsForWorkspace(workspace.id);
-    createConversation(workspace.id, `Conversation ${wsConvs.length + 1}`);
+    const wsConvs = getConversationsForProject(project.id);
+    createConversation(project.id, `Conversation ${wsConvs.length + 1}`);
     setStreamingMessageId(null);
-  }, [workspace, abort, createConversation, getConversationsForWorkspace, setStreamingMessageId]);
+  }, [project, abort, createConversation, getConversationsForProject, setStreamingMessageId]);
 
   const handleMermaidError = useCallback(
     async (
@@ -165,7 +165,7 @@ export const ChatSidebar: React.FC = () => {
   );
 
   const handleSend = useCallback(async (userQuery: string) => {
-    if (!workspace || streamingMessageId) return;
+    if (!project || streamingMessageId) return;
     const convId = useConversationStore.getState().activeConversationId;
     if (!convId) return;
 
@@ -177,7 +177,7 @@ export const ChatSidebar: React.FC = () => {
     };
     addChatMessage(convId, userMessage);
 
-    const activeFile = workspace.fileTree.find((f) => f.id === workspace.activeFileId);
+    const activeFile = project.fileTree.find((f) => f.id === project.activeFileId);
     if (!activeFile) {
       addChatMessage(convId, {
         id: `msg-${Date.now() + 1}`,
@@ -190,7 +190,7 @@ export const ChatSidebar: React.FC = () => {
 
     const { intent } = classifyIntent(userQuery);
     const models = resolveModelEndpoints(intent);
-    const { prompt } = compileContextPayload(workspace, activeFile, userQuery, deepAuditMode);
+    const { prompt } = compileContextPayload(project, activeFile, userQuery, deepAuditMode);
 
     const promptTokens = prompt.split(/\s+/).length;
     const estimatedCost = (promptTokens / 1_000_000) * models[0].costPerMillionInput;
@@ -213,7 +213,7 @@ export const ChatSidebar: React.FC = () => {
       estimatedCost,
     });
 
-    workspaceIdRef.current = workspace.id;
+    projectIdRef.current = project.id;
     assistantIdRef.current = assistantId;
     modelsRef.current = models;
     promptRef.current = prompt;
@@ -221,15 +221,15 @@ export const ChatSidebar: React.FC = () => {
 
     setStreamingMessageId(assistantId);
     tryModel(0);
-  }, [workspace, streamingMessageId, addChatMessage, addToSessionCost, deepAuditMode, setStreamingMessageId, tryModel]);
+  }, [project, streamingMessageId, addChatMessage, addToSessionCost, deepAuditMode, setStreamingMessageId, tryModel]);
 
-  if (!workspace) {
+  if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-600 px-6 text-center">
         <svg className="w-10 h-10 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
-        <span className="text-sm">Select a workspace to start chatting</span>
+        <span className="text-sm">Select a project to start chatting</span>
       </div>
     );
   }
@@ -244,7 +244,7 @@ export const ChatSidebar: React.FC = () => {
         </svg>
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">AI Chat</span>
         <div className="mx-1 flex-1 min-w-0">
-          <ConversationPicker workspaceId={workspace.id} />
+          <ConversationPicker projectId={project.id} />
         </div>
         <button
           onClick={handleNewChat}

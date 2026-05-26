@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compileContextPayload } from '../lib/ai/promptCompiler';
-import { Workspace, FileNode } from '../types/workspace';
+import { Project, FileNode } from '../types/project';
 
 describe('compileContextPayload', () => {
   const mockFile: FileNode = {
@@ -11,10 +11,10 @@ describe('compileContextPayload', () => {
     type: 'markdown',
   };
 
-  const mockWorkspace: Workspace = {
+  const mockProject: Project = {
     id: 'ws-1',
-    name: 'Test Workspace',
-    rootPath: '/workspace',
+    name: 'Test Project',
+    rootPath: '/project',
     profile: {
       category: 'MOBILE_APP',
       systemGuardrails: 'App Store rules, background sync, touch targets',
@@ -26,16 +26,16 @@ describe('compileContextPayload', () => {
     activeConversationId: null,
   };
 
-  it('includes workspace metadata in headers', () => {
-    const { headers } = compileContextPayload(mockWorkspace, mockFile, 'write an overview');
-    expect(headers.workspaceName).toBe('Test Workspace');
+  it('includes project metadata in headers', () => {
+    const { headers } = compileContextPayload(mockProject, mockFile, 'write an overview');
+    expect(headers.projectName).toBe('Test Project');
     expect(headers.domainCategory).toBe('MOBILE_APP');
     expect(headers.activeFilePath).toBe('/test.md');
     expect(headers.timestamp).toBeGreaterThan(0);
   });
 
   it('includes guardrails in generated prompt', () => {
-    const { prompt } = compileContextPayload(mockWorkspace, mockFile, 'write an overview');
+    const { prompt } = compileContextPayload(mockProject, mockFile, 'write an overview');
     expect(prompt).toContain('App Store rules, background sync, touch targets');
     expect(prompt).toContain('MOBILE_APP');
     expect(prompt).toContain('# Test Content');
@@ -43,12 +43,12 @@ describe('compileContextPayload', () => {
   });
 
   it('includes audit directive when deepAudit is true', () => {
-    const { prompt } = compileContextPayload(mockWorkspace, mockFile, 'audit', true);
+    const { prompt } = compileContextPayload(mockProject, mockFile, 'audit', true);
     expect(prompt).toContain('[DEEP AUDIT MODE]');
   });
 
   it('omits audit directive when deepAudit is false', () => {
-    const { prompt } = compileContextPayload(mockWorkspace, mockFile, 'audit', false);
+    const { prompt } = compileContextPayload(mockProject, mockFile, 'audit', false);
     expect(prompt).not.toContain('[DEEP AUDIT MODE]');
   });
 });

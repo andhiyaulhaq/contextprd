@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { idbStorage } from '../lib/storage/idbStorage';
-import { Conversation, ChatMessage } from '../types/workspace';
+import { Conversation, ChatMessage } from '../types/project';
 
 const MAX_CHAT_HISTORY = 100;
 
@@ -11,18 +11,18 @@ export interface ConversationState {
   hasHydrated: boolean;
 
   setHasHydrated: (state: boolean) => void;
-  createConversation: (workspaceId: string, name?: string) => string;
+  createConversation: (projectId: string, name?: string) => string;
   switchConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
   renameConversation: (conversationId: string, name: string) => void;
-  deleteConversationsForWorkspace: (workspaceId: string) => void;
+  deleteConversationsForProject: (projectId: string) => void;
 
   addChatMessage: (conversationId: string, message: ChatMessage) => void;
   updateChatMessage: (conversationId: string, messageId: string, content: string) => void;
   deleteChatMessage: (conversationId: string, messageId: string) => void;
   clearChatMessages: (conversationId: string) => void;
 
-  getConversationsForWorkspace: (workspaceId: string) => Conversation[];
+  getConversationsForProject: (projectId: string) => Conversation[];
   getActiveConversation: () => Conversation | null;
 }
 
@@ -35,16 +35,16 @@ export const useConversationStore = create<ConversationState>()(
 
       setHasHydrated: (state) => set({ hasHydrated: state }),
 
-      createConversation: (workspaceId, name) => {
+      createConversation: (projectId, name) => {
         const now = Date.now();
         const convId = `conv-${now}-${Math.random().toString(36).slice(2, 6)}`;
         const existingCount = Object.values(get().conversations).filter(
-          (c) => c.workspaceId === workspaceId
+          (c) => c.projectId === projectId
         ).length;
 
         const newConv: Conversation = {
           id: convId,
-          workspaceId,
+          projectId,
           name: name || `Conversation ${existingCount + 1}`,
           messages: [],
           createdAt: now,
@@ -67,7 +67,7 @@ export const useConversationStore = create<ConversationState>()(
       deleteConversation: (conversationId) => {
         const conv = get().conversations[conversationId];
         if (!conv) return;
-        const workspaceId = conv.workspaceId;
+        const projectId = conv.projectId;
 
         set((state) => {
           const { [conversationId]: _removed, ...remaining } = state.conversations;
@@ -75,7 +75,7 @@ export const useConversationStore = create<ConversationState>()(
           let nextActiveId = state.activeConversationId;
 
           if (state.activeConversationId === conversationId) {
-            const wsConvs = Object.values(remaining).filter((c) => c.workspaceId === workspaceId);
+            const wsConvs = Object.values(remaining).filter((c) => c.projectId === projectId);
             if (wsConvs.length > 0) {
               nextActiveId = wsConvs[0].id;
             } else {
@@ -84,7 +84,7 @@ export const useConversationStore = create<ConversationState>()(
               const fallbackId = `conv-${now}-${Math.random().toString(36).slice(2, 6)}`;
               remaining[fallbackId] = {
                 id: fallbackId,
-                workspaceId,
+                projectId,
                 name: 'Conversation 1',
                 messages: [],
                 createdAt: now,
@@ -114,13 +114,13 @@ export const useConversationStore = create<ConversationState>()(
         });
       },
 
-      deleteConversationsForWorkspace: (workspaceId) => {
+      deleteConversationsForProject: (projectId) => {
         set((state) => {
           const remaining: Record<string, Conversation> = {};
           let activeStillExists = false;
 
           for (const [id, conv] of Object.entries(state.conversations)) {
-            if (conv.workspaceId !== workspaceId) {
+            if (conv.projectId !== projectId) {
               remaining[id] = conv;
               if (id === state.activeConversationId) activeStillExists = true;
             }
@@ -199,9 +199,9 @@ export const useConversationStore = create<ConversationState>()(
         });
       },
 
-      getConversationsForWorkspace: (workspaceId) => {
+      getConversationsForProject: (projectId) => {
         return Object.values(get().conversations)
-          .filter((c) => c.workspaceId === workspaceId)
+          .filter((c) => c.projectId === projectId)
           .sort((a, b) => a.createdAt - b.createdAt);
       },
 

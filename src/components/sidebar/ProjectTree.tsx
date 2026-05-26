@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useWorkspaceStore } from '../../store/useWorkspaceStore';
-import { FileNode } from '../../types/workspace';
+import { useProjectStore } from '../../store/useProjectStore';
+import { FileNode } from '../../types/project';
 import { exportAsSingleFile, exportAsZip } from '../../lib/exportUtils';
 
 const FileIcon: React.FC<{ name: string; isDir: boolean }> = ({ name, isDir }) => {
@@ -12,14 +12,14 @@ const FileIcon: React.FC<{ name: string; isDir: boolean }> = ({ name, isDir }) =
   return <span className="text-xs text-gray-600">{'\u{1F4C4}'}</span>;
 };
 
-export const WorkspaceTree: React.FC = () => {
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const setActiveFile = useWorkspaceStore((s) => s.setActiveFile);
-  const createFile = useWorkspaceStore((s) => s.createFile);
-  const renameFile = useWorkspaceStore((s) => s.renameFile);
-  const deleteFile = useWorkspaceStore((s) => s.deleteFile);
-  const updateFileContent = useWorkspaceStore((s) => s.updateFileContent);
+export const ProjectTree: React.FC = () => {
+  const projects = useProjectStore((s) => s.projects);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const setActiveFile = useProjectStore((s) => s.setActiveFile);
+  const createFile = useProjectStore((s) => s.createFile);
+  const renameFile = useProjectStore((s) => s.renameFile);
+  const deleteFile = useProjectStore((s) => s.deleteFile);
+  const updateFileContent = useProjectStore((s) => s.updateFileContent);
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState('');
@@ -27,29 +27,29 @@ export const WorkspaceTree: React.FC = () => {
   const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
   const [isDownloadMenuOpen, setIsDownloadMenuOpen] = React.useState(false);
 
-  const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
+  const project = activeProjectId ? projects[activeProjectId] : null;
 
-  if (!workspace) {
+  if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-600 text-xs px-4 text-center">
         <svg className="w-8 h-8 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
-        No workspace selected
+        No project selected
       </div>
     );
   }
 
-  if (workspace.fileTree.length === 0) {
+  if (project.fileTree.length === 0) {
     return (
       <div className="p-4 text-gray-600 text-xs text-center">
-        Empty workspace
+        Empty project
       </div>
     );
   }
 
   const renderNode = (node: FileNode, depth: number = 0) => {
-    const isActive = node.id === workspace.activeFileId;
+    const isActive = node.id === project.activeFileId;
     const isDir = node.type === 'directory';
 
     return (
@@ -63,7 +63,7 @@ export const WorkspaceTree: React.FC = () => {
           style={{ paddingLeft: `${12 + depth * 16}px` }}
           onClick={() => {
             if (!isDir && editingId !== node.id) {
-              setActiveFile(workspace.id, node.id);
+              setActiveFile(project.id, node.id);
             }
           }}
         >
@@ -82,14 +82,14 @@ export const WorkspaceTree: React.FC = () => {
                 
                 if (isNewFileId === node.id || isOnlyH1) {
                   const finalName = val.trim() ? (val.trim().endsWith('.md') ? val.trim() : `${val.trim()}.md`) : 'new_file.md';
-                  renameFile(workspace.id, node.id, finalName);
+                  renameFile(project.id, node.id, finalName);
                   const displayTitle = val.trim().replace(/\.md$/i, '') || 'new_file';
-                  updateFileContent(workspace.id, node.id, `# ${displayTitle}\n\n`);
+                  updateFileContent(project.id, node.id, `# ${displayTitle}\n\n`);
                 }
               }}
               onBlur={() => {
                 if (editName.trim() && editName.trim() !== node.name && isNewFileId !== node.id) {
-                  renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
+                  renameFile(project.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
                 }
                 setEditingId(null);
                 setIsNewFileId(null);
@@ -97,7 +97,7 @@ export const WorkspaceTree: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   if (editName.trim() && editName.trim() !== node.name && isNewFileId !== node.id) {
-                    renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
+                    renameFile(project.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
                   }
                   setEditingId(null);
                   setIsNewFileId(null);
@@ -157,14 +157,14 @@ export const WorkspaceTree: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider truncate">
-            {workspace.name}
+            {project.name}
           </span>
         </div>
         <div className="flex items-center gap-1 relative">
           <button
             onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
             className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 relative"
-            title="Export Workspace"
+            title="Export Project"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -181,7 +181,7 @@ export const WorkspaceTree: React.FC = () => {
                 <button 
                   className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
                   onClick={() => {
-                    exportAsSingleFile(workspace);
+                    exportAsSingleFile(project);
                     setIsDownloadMenuOpen(false);
                   }}
                 >
@@ -190,7 +190,7 @@ export const WorkspaceTree: React.FC = () => {
                 <button 
                   className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
                   onClick={() => {
-                    exportAsZip(workspace);
+                    exportAsZip(project);
                     setIsDownloadMenuOpen(false);
                   }}
                 >
@@ -202,7 +202,7 @@ export const WorkspaceTree: React.FC = () => {
 
           <button
             onClick={() => {
-              const newId = createFile(workspace.id, 'new_file.md');
+              const newId = createFile(project.id, 'new_file.md');
               if (newId) {
                 setEditingId(newId);
                 setEditName('new_file');
@@ -218,7 +218,7 @@ export const WorkspaceTree: React.FC = () => {
           </button>
         </div>
       </div>
-      {workspace.fileTree.map((node) => renderNode(node))}
+      {project.fileTree.map((node) => renderNode(node))}
 
       {deleteDialogFile && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -241,7 +241,7 @@ export const WorkspaceTree: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
-                    deleteFile(workspace.id, deleteDialogFile.id);
+                    deleteFile(project.id, deleteDialogFile.id);
                     setDeleteDialogFile(null);
                   }}
                   className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-[0.98]"

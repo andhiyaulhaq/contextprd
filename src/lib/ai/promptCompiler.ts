@@ -1,21 +1,21 @@
-import { Workspace, FileNode } from '../../types/workspace';
+import { Project, FileNode } from '../../types/project';
 
 export interface SystemHeaders {
-  workspaceName: string;
+  projectName: string;
   domainCategory: string;
   activeFilePath: string;
   timestamp: number;
 }
 
 export function compileContextPayload(
-  workspace: Workspace,
+  project: Project,
   activeFile: FileNode,
   userQuery: string,
   deepAudit: boolean = false,
 ): { prompt: string; headers: SystemHeaders } {
   const headers: SystemHeaders = {
-    workspaceName: workspace.name,
-    domainCategory: workspace.profile.category,
+    projectName: project.name,
+    domainCategory: project.profile.category,
     activeFilePath: activeFile.path,
     timestamp: Date.now(),
   };
@@ -27,8 +27,8 @@ export function compileContextPayload(
   const prompt = `
 SYSTEM PROMPT CONSTRAINTS:
 You are an expert software application architect. You must adhere strictly to the target environment's technical ecosystem constraints.
-Target Category Context: ${workspace.profile.category}
-Guardrail Assertions: ${workspace.profile.systemGuardrails}
+Target Category Context: ${project.profile.category}
+Guardrail Assertions: ${project.profile.systemGuardrails}
 ${auditDirective}
 
 ACTIVE FILE RECORD CONTENT UNDER EVALUATION:

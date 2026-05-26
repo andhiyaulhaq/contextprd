@@ -1,4 +1,4 @@
-import { DomainCategory, FileNode } from '../../types/workspace';
+import { DomainCategory, FileNode } from '../../types/project';
 import { TEMPLATES } from './generated';
 
 export function getBlueprint(category: DomainCategory): Record<string, string> {

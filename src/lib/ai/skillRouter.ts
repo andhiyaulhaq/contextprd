@@ -1,5 +1,5 @@
 import nlp from 'compromise';
-import { SkillIntent } from '../../types/workspace';
+import { SkillIntent } from '../../types/project';
 
 interface ClassificationResult {
   intent: SkillIntent;

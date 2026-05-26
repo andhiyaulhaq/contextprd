@@ -12,7 +12,7 @@ const domains = ['WEB_APP', 'NATIVE_DESKTOP', 'MOBILE_APP', 'GENERAL_SAAS'];
 const generatedCode = [];
 
 generatedCode.push(`// AUTO-GENERATED FILE - DO NOT EDIT`);
-generatedCode.push(`import { DomainCategory } from '../../types/workspace';\n`);
+generatedCode.push(`import { DomainCategory } from '../../types/project';\n`);
 generatedCode.push(`export const TEMPLATES: Record<DomainCategory, Record<string, string>> = {`);
 
 for (const domain of domains) {

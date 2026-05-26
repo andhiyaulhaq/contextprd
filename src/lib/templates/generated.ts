@@ -1,5 +1,5 @@
 // AUTO-GENERATED FILE - DO NOT EDIT
-import { DomainCategory } from '../../types/workspace';
+import { DomainCategory } from '../../types/project';
 
 export const TEMPLATES: Record<DomainCategory, Record<string, string>> = {
   WEB_APP: {

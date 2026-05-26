@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { ChatMessage as ChatMessageType } from '../../types/workspace';
+import { ChatMessage as ChatMessageType } from '../../types/project';
 import { extractMermaidBlocks, MermaidSegment } from '../../lib/mermaid/extractBlocks';
 import { MermaidRenderer } from '../editor/MermaidRenderer';
 

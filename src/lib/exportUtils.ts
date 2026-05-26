@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { Workspace, FileNode } from '../types/workspace';
+import { Project, FileNode } from '../types/project';
 
 /**
  * Triggers a file download in the browser.
@@ -32,18 +32,18 @@ function flattenMarkdownFiles(nodes: FileNode[]): FileNode[] {
 }
 
 /**
- * Exports the entire workspace as a single concatenated Markdown file.
+ * Exports the entire project as a single concatenated Markdown file.
  * Includes a Table of Contents at the top.
  */
-export function exportAsSingleFile(workspace: Workspace) {
-  const files = flattenMarkdownFiles(workspace.fileTree);
+export function exportAsSingleFile(project: Project) {
+  const files = flattenMarkdownFiles(project.fileTree);
   
   if (files.length === 0) {
-    alert('Workspace is empty.');
+    alert('Project is empty.');
     return;
   }
 
-  let content = `# ${workspace.name} - Product Requirements Document\n\n`;
+  let content = `# ${project.name} - Product Requirements Document\n\n`;
   
   // Generate Table of Contents
   content += `## Table of Contents\n\n`;
@@ -64,7 +64,7 @@ export function exportAsSingleFile(workspace: Workspace) {
   });
 
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-  const filename = `${workspace.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_prd.md`;
+  const filename = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_prd.md`;
   triggerDownload(blob, filename);
 }
 
@@ -85,24 +85,24 @@ function addFilesToZip(zipFolder: JSZip, nodes: FileNode[]) {
 }
 
 /**
- * Exports the workspace as a ZIP archive, preserving the folder structure.
+ * Exports the project as a ZIP archive, preserving the folder structure.
  */
-export async function exportAsZip(workspace: Workspace) {
-  if (workspace.fileTree.length === 0) {
-    alert('Workspace is empty.');
+export async function exportAsZip(project: Project) {
+  if (project.fileTree.length === 0) {
+    alert('Project is empty.');
     return;
   }
 
   const zip = new JSZip();
-  const rootFolder = zip.folder(workspace.name.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+  const rootFolder = zip.folder(project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase());
   
   if (rootFolder) {
-    addFilesToZip(rootFolder, workspace.fileTree);
+    addFilesToZip(rootFolder, project.fileTree);
   }
 
   try {
     const blob = await zip.generateAsync({ type: 'blob' });
-    const filename = `${workspace.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`;
+    const filename = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`;
     triggerDownload(blob, filename);
   } catch (error) {
     console.error('Error generating zip:', error);

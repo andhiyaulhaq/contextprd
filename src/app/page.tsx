@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { WorkspaceSwitcher } from '../components/sidebar/WorkspaceSwitcher';
-import { WorkspaceTree } from '../components/sidebar/WorkspaceTree';
+import { ProjectSwitcher } from '../components/sidebar/ProjectSwitcher';
+import { ProjectTree } from '../components/sidebar/ProjectTree';
 import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
-import { useWorkspaceStore } from '../store/useWorkspaceStore';
+import { useProjectStore } from '../store/useProjectStore';
 import { useConversationStore } from '../store/useConversationStore';
 
 function AppLoadingSkeleton() {
@@ -13,26 +13,26 @@ function AppLoadingSkeleton() {
     <div className="flex h-screen bg-gray-950 text-gray-200 items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-        <p className="text-sm text-gray-500 animate-pulse">Loading workspace...</p>
+        <p className="text-sm text-gray-500 animate-pulse">Loading project...</p>
       </div>
     </div>
   );
 }
 
 export default function Home() {
-  const workspaceHydrated = useWorkspaceStore((s) => s.hasHydrated);
+  const projectHydrated = useProjectStore((s) => s.hasHydrated);
   const conversationHydrated = useConversationStore((s) => s.hasHydrated);
 
-  if (!workspaceHydrated || !conversationHydrated) {
+  if (!projectHydrated || !conversationHydrated) {
     return <AppLoadingSkeleton />;
   }
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-200">
       <aside className="w-64 shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
-        <WorkspaceSwitcher />
+        <ProjectSwitcher />
         <div className="flex-1 overflow-y-auto">
-          <WorkspaceTree />
+          <ProjectTree />
         </div>
       </aside>
 
