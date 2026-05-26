@@ -7,11 +7,23 @@ export interface SystemHeaders {
   timestamp: number;
 }
 
+function findFileById(nodes: FileNode[], id: string): FileNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const found = findFileById(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export function compileContextPayload(
   project: Project,
   activeFile: FileNode,
   userQuery: string,
   deepAudit: boolean = false,
+  mentionedFileIds: string[] = [],
 ): { prompt: string; headers: SystemHeaders } {
   const headers: SystemHeaders = {
     projectName: project.name,
@@ -23,6 +35,25 @@ export function compileContextPayload(
   const auditDirective = deepAudit
     ? `\n[DEEP AUDIT MODE] Perform a thorough cross-section analysis. Consider edge cases, platform constraints, and downstream impacts.`
     : '';
+
+  // Resolve mentioned files contents
+  let mentionedContexts = '';
+  if (mentionedFileIds.length > 0) {
+    const resolvedFiles: FileNode[] = [];
+    mentionedFileIds.forEach((id) => {
+      const file = findFileById(project.fileTree, id);
+      if (file && file.id !== activeFile.id && file.type === 'markdown') {
+        resolvedFiles.push(file);
+      }
+    });
+
+    if (resolvedFiles.length > 0) {
+      mentionedContexts = '\nMENTIONED FILE CONTEXTS:\n';
+      resolvedFiles.forEach((file) => {
+        mentionedContexts += `<file path="${file.path}">\n${file.content}\n</file>\n`;
+      });
+    }
+  }
 
   const prompt = `
 SYSTEM PROMPT CONSTRAINTS:
@@ -36,7 +67,7 @@ ACTIVE FILE RECORD CONTENT UNDER EVALUATION:
 File Path: ${activeFile.path}
 ${activeFile.content}
 \`\`\`
-
+${mentionedContexts}
 USER OPERATIONAL INSTRUCTION:
 ${userQuery}
 

@@ -11,6 +11,14 @@ describe('compileContextPayload', () => {
     type: 'markdown',
   };
 
+  const mockFile2: FileNode = {
+    id: 'file-2',
+    name: 'other.md',
+    path: '/other.md',
+    content: '# Other File Content\n\nSome secondary details',
+    type: 'markdown',
+  };
+
   const mockProject: Project = {
     id: 'ws-1',
     name: 'Test Project',
@@ -20,10 +28,8 @@ describe('compileContextPayload', () => {
       systemGuardrails: 'App Store rules, background sync, touch targets',
       templateBlueprint: {},
     },
-    fileTree: [mockFile],
+    fileTree: [mockFile, mockFile2],
     activeFileId: 'file-1',
-    conversations: [],
-    activeConversationId: null,
   };
 
   it('includes project metadata in headers', () => {
@@ -50,5 +56,12 @@ describe('compileContextPayload', () => {
   it('omits audit directive when deepAudit is false', () => {
     const { prompt } = compileContextPayload(mockProject, mockFile, 'audit', false);
     expect(prompt).not.toContain('[DEEP AUDIT MODE]');
+  });
+
+  it('embeds XML blocks for mentioned files in the prompt', () => {
+    const { prompt } = compileContextPayload(mockProject, mockFile, 'explain this', false, ['file-2']);
+    expect(prompt).toContain('MENTIONED FILE CONTEXTS:');
+    expect(prompt).toContain('<file path="/other.md">');
+    expect(prompt).toContain('# Other File Content');
   });
 });

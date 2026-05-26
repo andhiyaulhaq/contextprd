@@ -164,7 +164,7 @@ export const ChatSidebar: React.FC = () => {
     [executeHealCycle, sendSilentQuery],
   );
 
-  const handleSend = useCallback(async (userQuery: string) => {
+  const handleSend = useCallback(async (userQuery: string, mentionedFileIds: string[] = []) => {
     if (!project || streamingMessageId) return;
     const convId = useConversationStore.getState().activeConversationId;
     if (!convId) return;
@@ -190,7 +190,7 @@ export const ChatSidebar: React.FC = () => {
 
     const { intent } = classifyIntent(userQuery);
     const models = resolveModelEndpoints(intent);
-    const { prompt } = compileContextPayload(project, activeFile, userQuery, deepAuditMode);
+    const { prompt } = compileContextPayload(project, activeFile, userQuery, deepAuditMode, mentionedFileIds);
 
     const promptTokens = prompt.split(/\s+/).length;
     const estimatedCost = (promptTokens / 1_000_000) * models[0].costPerMillionInput;
