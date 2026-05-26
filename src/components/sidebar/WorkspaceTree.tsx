@@ -3,6 +3,7 @@
 import React from 'react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { FileNode } from '../../types/workspace';
+import { exportAsSingleFile, exportAsZip } from '../../lib/exportUtils';
 
 const FileIcon: React.FC<{ name: string; isDir: boolean }> = ({ name, isDir }) => {
   if (isDir) return <span className="text-xs opacity-60">{'\u{1F4C1}'}</span>;
@@ -24,6 +25,7 @@ export const WorkspaceTree: React.FC = () => {
   const [editName, setEditName] = React.useState('');
   const [isNewFileId, setIsNewFileId] = React.useState<string | null>(null);
   const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
+  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = React.useState(false);
 
   const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
 
@@ -158,22 +160,63 @@ export const WorkspaceTree: React.FC = () => {
             {workspace.name}
           </span>
         </div>
-        <button
-          onClick={() => {
-            const newId = createFile(workspace.id, 'new_file.md');
-            if (newId) {
-              setEditingId(newId);
-              setEditName('new_file');
-              setIsNewFileId(newId);
-            }
-          }}
-          className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
-          title="New Markdown File"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-1 relative">
+          <button
+            onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
+            className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 relative"
+            title="Export Workspace"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </button>
+          
+          {isDownloadMenuOpen && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsDownloadMenuOpen(false)}
+              />
+              <div className="absolute right-8 top-8 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col text-sm py-1">
+                <button 
+                  className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                  onClick={() => {
+                    exportAsSingleFile(workspace);
+                    setIsDownloadMenuOpen(false);
+                  }}
+                >
+                  <span className="text-indigo-400">#</span> Single PRD (.md)
+                </button>
+                <button 
+                  className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                  onClick={() => {
+                    exportAsZip(workspace);
+                    setIsDownloadMenuOpen(false);
+                  }}
+                >
+                  <span className="text-yellow-400 opacity-80">{'\u{1F4C1}'}</span> ZIP Archive (.zip)
+                </button>
+              </div>
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              const newId = createFile(workspace.id, 'new_file.md');
+              if (newId) {
+                setEditingId(newId);
+                setEditName('new_file');
+                setIsNewFileId(newId);
+              }
+            }}
+            className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
+            title="New Markdown File"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
       </div>
       {workspace.fileTree.map((node) => renderNode(node))}
 
