@@ -1,0 +1,30 @@
+{
+  "productName": "ContextPRD",
+  "version": "2.0.0",
+  "identifier": "com.contextprd.app",
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png"]
+  },
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ContextPRD Workspace Client",
+        "width": 1440,
+        "height": 900,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' https://openrouter.ai; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+    }
+  }
+}
