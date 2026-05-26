@@ -129,7 +129,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             const newFile: FileNode = {
               id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               name,
-              type: 'file',
+              path: `${workspace.rootPath}/${name}`,
+              type: 'markdown',
               content: `# ${name.replace(/\.md$/i, '')}\n\n`,
             };
             newId = newFile.id;
@@ -154,7 +155,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             
             const renameNode = (nodes: FileNode[]): FileNode[] =>
               nodes.map((node) => {
-                if (node.id === fileId) return { ...node, name: newName };
+                if (node.id === fileId) {
+                  return {
+                    ...node,
+                    name: newName,
+                    path: node.path ? node.path.replace(/[^/]+$/, newName) : `${workspace.rootPath}/${newName}`
+                  };
+                }
                 if (node.children) return { ...node, children: renameNode(node.children) };
                 return node;
               });

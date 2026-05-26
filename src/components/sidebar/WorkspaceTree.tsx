@@ -18,9 +18,11 @@ export const WorkspaceTree: React.FC = () => {
   const createFile = useWorkspaceStore((s) => s.createFile);
   const renameFile = useWorkspaceStore((s) => s.renameFile);
   const deleteFile = useWorkspaceStore((s) => s.deleteFile);
+  const updateFileContent = useWorkspaceStore((s) => s.updateFileContent);
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState('');
+  const [isNewFileId, setIsNewFileId] = React.useState<string | null>(null);
   const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
 
   const workspace = activeWorkspaceId ? workspaces[activeWorkspaceId] : null;
@@ -69,21 +71,39 @@ export const WorkspaceTree: React.FC = () => {
             <input
               autoFocus
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setEditName(val);
+                
+                const rawName = node.name.replace(/\.md$/i, '');
+                const isOnlyH1 = node.content.trim() === '' || node.content.trim() === `# ${rawName}`;
+                
+                if (isNewFileId === node.id || isOnlyH1) {
+                  const finalName = val.trim() ? (val.trim().endsWith('.md') ? val.trim() : `${val.trim()}.md`) : 'new_file.md';
+                  renameFile(workspace.id, node.id, finalName);
+                  const displayTitle = val.trim().replace(/\.md$/i, '') || 'new_file';
+                  updateFileContent(workspace.id, node.id, `# ${displayTitle}\n\n`);
+                }
+              }}
               onBlur={() => {
-                if (editName.trim() && editName.trim() !== node.name) {
+                if (editName.trim() && editName.trim() !== node.name && isNewFileId !== node.id) {
                   renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
                 }
                 setEditingId(null);
+                setIsNewFileId(null);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  if (editName.trim() && editName.trim() !== node.name) {
+                  if (editName.trim() && editName.trim() !== node.name && isNewFileId !== node.id) {
                     renameFile(workspace.id, node.id, editName.trim().endsWith('.md') ? editName.trim() : `${editName.trim()}.md`);
                   }
                   setEditingId(null);
+                  setIsNewFileId(null);
                 }
-                if (e.key === 'Escape') setEditingId(null);
+                if (e.key === 'Escape') {
+                  setEditingId(null);
+                  setIsNewFileId(null);
+                }
               }}
               onClick={(e) => e.stopPropagation()}
               className="flex-1 bg-gray-800 text-gray-200 rounded px-1.5 py-0.5 border border-indigo-500/40 outline-none text-xs min-w-0"
@@ -144,6 +164,7 @@ export const WorkspaceTree: React.FC = () => {
             if (newId) {
               setEditingId(newId);
               setEditName('new_file');
+              setIsNewFileId(newId);
             }
           }}
           className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
