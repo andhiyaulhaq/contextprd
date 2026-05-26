@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { idbStorage } from '../lib/storage/idbStorage';
 import { temporal } from 'zundo';
 import { Workspace, DomainCategory } from '../types/workspace';
 import { blueprintToFileTree } from '../lib/templates/blueprints';
@@ -9,7 +10,9 @@ import { FileNode } from '../types/workspace';
 export interface WorkspaceState {
   workspaces: Record<string, Workspace>;
   activeWorkspaceId: string | null;
+  hasHydrated: boolean;
 
+  setHasHydrated: (state: boolean) => void;
   setActiveWorkspace: (id: string) => void;
   createWorkspace: (name: string, category: DomainCategory) => string;
   renameWorkspace: (id: string, name: string) => void;
@@ -34,6 +37,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       (set) => ({
         workspaces: {},
         activeWorkspaceId: null,
+        hasHydrated: false,
+
+        setHasHydrated: (state) => set({ hasHydrated: state }),
 
         setActiveWorkspace: (id) => {
           set({ activeWorkspaceId: id });
@@ -240,7 +246,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     ),
     {
       name: 'context-prd-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: idbStorage,
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
       merge: (persisted: any, current: WorkspaceState) => {
         const workspaces: Record<string, Workspace> = {};
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { idbStorage } from '../lib/storage/idbStorage';
 import { Conversation, ChatMessage } from '../types/workspace';
 
 const MAX_CHAT_HISTORY = 100;
@@ -7,7 +8,9 @@ const MAX_CHAT_HISTORY = 100;
 export interface ConversationState {
   conversations: Record<string, Conversation>;
   activeConversationId: string | null;
+  hasHydrated: boolean;
 
+  setHasHydrated: (state: boolean) => void;
   createConversation: (workspaceId: string, name?: string) => string;
   switchConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
@@ -28,6 +31,9 @@ export const useConversationStore = create<ConversationState>()(
     (set, get) => ({
       conversations: {},
       activeConversationId: null,
+      hasHydrated: false,
+
+      setHasHydrated: (state) => set({ hasHydrated: state }),
 
       createConversation: (workspaceId, name) => {
         const now = Date.now();
@@ -207,7 +213,10 @@ export const useConversationStore = create<ConversationState>()(
     }),
     {
       name: 'context-prd-conversations',
-      storage: createJSONStorage(() => localStorage),
+      storage: idbStorage,
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
