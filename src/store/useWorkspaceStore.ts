@@ -15,6 +15,7 @@ export interface WorkspaceState {
   renameWorkspace: (id: string, name: string) => void;
   deleteWorkspace: (id: string) => void;
   setActiveFile: (workspaceId: string, fileId: string) => void;
+  createFile: (workspaceId: string, name: string) => void;
   updateFileContent: (workspaceId: string, fileId: string, updatedContent: string) => void;
 }
 
@@ -114,6 +115,28 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               workspaces: {
                 ...state.workspaces,
                 [workspaceId]: { ...workspace, activeFileId: fileId },
+              },
+            };
+          }),
+
+        createFile: (workspaceId, name) =>
+          set((state) => {
+            const workspace = state.workspaces[workspaceId];
+            if (!workspace) return state;
+            const newFile: FileNode = {
+              id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              name,
+              type: 'file',
+              content: `# ${name.replace(/\.md$/i, '')}\n\n`,
+            };
+            return {
+              workspaces: {
+                ...state.workspaces,
+                [workspaceId]: {
+                  ...workspace,
+                  fileTree: [...workspace.fileTree, newFile],
+                  activeFileId: newFile.id,
+                },
               },
             };
           }),
