@@ -184,8 +184,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
           <span className="text-xs text-gray-600 mr-2">{wordCount} words</span>
           {onModeChange ? (
              <div className="flex bg-gray-900 rounded-md p-0.5 border border-gray-800">
-               <button onClick={() => onModeChange('wysiwyg')} className={`text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'wysiwyg' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>VISUAL</button>
-               <button onClick={() => onModeChange('markdown')} className={`text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'markdown' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>MARKDOWN</button>
+               <button onClick={() => onModeChange('wysiwyg')} className={`cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'wysiwyg' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>VISUAL</button>
+               <button onClick={() => onModeChange('markdown')} className={`cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'markdown' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>MARKDOWN</button>
              </div>
           ) : (
             <span className="text-xs text-indigo-400/50 uppercase tracking-wider font-semibold border border-indigo-500/20 px-2 py-0.5 rounded-full bg-indigo-500/5">
