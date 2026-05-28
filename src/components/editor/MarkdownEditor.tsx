@@ -36,7 +36,11 @@ const draftHighlightField = StateField.define<DecorationSet>({
   provide: (f: StateField<DecorationSet>) => EditorView.decorations.from(f)
 });
 
-export const MarkdownEditor: React.FC = () => {
+interface MarkdownEditorProps {
+  onModeChange?: (mode: 'wysiwyg' | 'markdown') => void;
+}
+
+export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) => {
   const projects = useProjectStore((s) => s.projects);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const updateFileContent = useProjectStore((s) => s.updateFileContent);
@@ -250,7 +254,13 @@ export const MarkdownEditor: React.FC = () => {
           <span className="text-xs text-gray-400 font-mono truncate">{activeFile.path}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-600 mr-1">{wordCount} words</span>
+          <span className="text-xs text-gray-600 mr-2">{wordCount} words</span>
+          {onModeChange && (
+             <div className="flex bg-gray-900 rounded-md p-0.5 border border-gray-800 mr-2">
+               <button onClick={() => onModeChange('wysiwyg')} className="text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold text-gray-500 hover:text-gray-300">WYSIWYG</button>
+               <button onClick={() => onModeChange('markdown')} className="text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold bg-indigo-500/20 text-indigo-400">RAW</button>
+             </div>
+          )}
           {(['edit', 'split', 'preview'] as ViewMode[]).map((mode) => (
             <button
               key={mode}

@@ -13,7 +13,12 @@ import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { CodeBlockNodeView } from './CodeBlockNodeView';
 
-export const BlockEditor: React.FC = () => {
+interface BlockEditorProps {
+  onModeChange?: (mode: 'wysiwyg' | 'markdown') => void;
+  currentMode?: string;
+}
+
+export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentMode }) => {
   const projects = useProjectStore((s) => s.projects);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const updateFileContent = useProjectStore((s) => s.updateFileContent);
@@ -177,9 +182,16 @@ export const BlockEditor: React.FC = () => {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-600 mr-2">{wordCount} words</span>
-          <span className="text-xs text-indigo-400/50 uppercase tracking-wider font-semibold border border-indigo-500/20 px-2 py-0.5 rounded-full bg-indigo-500/5">
-            WYSIWYG
-          </span>
+          {onModeChange ? (
+             <div className="flex bg-gray-900 rounded-md p-0.5 border border-gray-800">
+               <button onClick={() => onModeChange('wysiwyg')} className={`text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'wysiwyg' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>WYSIWYG</button>
+               <button onClick={() => onModeChange('markdown')} className={`text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'markdown' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>RAW</button>
+             </div>
+          ) : (
+            <span className="text-xs text-indigo-400/50 uppercase tracking-wider font-semibold border border-indigo-500/20 px-2 py-0.5 rounded-full bg-indigo-500/5">
+              WYSIWYG
+            </span>
+          )}
         </div>
       </div>
       

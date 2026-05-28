@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ProjectSwitcher } from '../components/sidebar/ProjectSwitcher';
 import { ProjectTree } from '../components/sidebar/ProjectTree';
 import { BlockEditor } from '../components/editor/BlockEditor';
+import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { useProjectStore } from '../store/useProjectStore';
 import { useConversationStore } from '../store/useConversationStore';
@@ -22,6 +23,7 @@ function AppLoadingSkeleton() {
 export default function Home() {
   const projectHydrated = useProjectStore((s) => s.hasHydrated);
   const conversationHydrated = useConversationStore((s) => s.hasHydrated);
+  const [editorMode, setEditorMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg');
 
   if (!projectHydrated || !conversationHydrated) {
     return <AppLoadingSkeleton />;
@@ -37,7 +39,11 @@ export default function Home() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0">
-        <BlockEditor />
+        {editorMode === 'wysiwyg' ? (
+          <BlockEditor onModeChange={setEditorMode} currentMode={editorMode} />
+        ) : (
+          <MarkdownEditor onModeChange={setEditorMode} />
+        )}
       </main>
 
       <aside className="w-80 shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col">
