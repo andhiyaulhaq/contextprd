@@ -175,19 +175,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
 
   return (
     <div className="flex flex-col h-full relative bg-gray-950 text-gray-200" onKeyDown={handleKeyDown}>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50 h-[45px]">
         <div className="flex items-center gap-2 min-w-0">
           <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
           <span className="text-xs text-gray-400 font-mono truncate">{activeFile.path}</span>
+          <span className="text-xs text-gray-600 ml-2 shrink-0">{wordCount} words</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-600 mr-2">{wordCount} words</span>
+        <div className="flex items-center gap-1.5 shrink-0">
           {onModeChange ? (
              <div className="flex bg-gray-900 rounded-md p-0.5 border border-gray-800">
-               <button onClick={() => onModeChange('wysiwyg')} className={`cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'wysiwyg' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>VISUAL</button>
                <button onClick={() => onModeChange('markdown')} className={`cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'markdown' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>MARKDOWN</button>
+               <button onClick={() => onModeChange('wysiwyg')} className={`cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold ${currentMode === 'wysiwyg' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}>VISUAL</button>
              </div>
           ) : (
             <span className="text-xs text-indigo-400/50 uppercase tracking-wider font-semibold border border-indigo-500/20 px-2 py-0.5 rounded-full bg-indigo-500/5">
