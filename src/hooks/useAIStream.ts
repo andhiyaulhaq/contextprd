@@ -67,9 +67,10 @@ export function useAIStream() {
 
   const sendQuery = useCallback(async (
     prompt: string,
-    modelId: string,
+    modelIds: string | string[],
     callbacks: StreamCallbacks,
   ) => {
+    const modelsToTry = Array.isArray(modelIds) ? modelIds : [modelIds];
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
     if (!apiKey) {
       callbacks.onError(NO_KEY_ERROR);
@@ -80,81 +81,98 @@ export function useAIStream() {
     abortRef.current = controller;
 
     let accumulated = '';
-    logApiCall(modelId, prompt);
 
-    try {
-      const google = createGoogleGenerativeAI({
-        apiKey,
-      });
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const modelId = modelsToTry[i];
+      logApiCall(modelId, prompt);
 
-      const model = google(modelId);
+      try {
+        const google = createGoogleGenerativeAI({ apiKey });
+        const model = google(modelId);
 
-      const result = streamText({
-        model,
-        prompt,
-        abortSignal: controller.signal,
-        maxRetries: 0,
-      });
+        const result = streamText({
+          model,
+          prompt,
+          abortSignal: controller.signal,
+          maxRetries: 0,
+        });
 
-      for await (const chunk of result.textStream) {
-        accumulated += chunk;
-        callbacks.onChunk(accumulated);
-      }
+        for await (const chunk of result.textStream) {
+          accumulated += chunk;
+          callbacks.onChunk(accumulated);
+        }
 
-      logApiSuccess(modelId, accumulated.length);
-      callbacks.onComplete(accumulated);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.log(`%c[Google AI] %c${modelId} %caborted`, 'color: #10b981; font-weight: bold;', 'color: #a1a1aa;', 'color: #f59e0b;');
+        logApiSuccess(modelId, accumulated.length);
         callbacks.onComplete(accumulated);
-        return;
+        return; // Success, break loop
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.log(`%c[Google AI] %c${modelId} %caborted`, 'color: #10b981; font-weight: bold;', 'color: #a1a1aa;', 'color: #f59e0b;');
+          callbacks.onComplete(accumulated);
+          return;
+        }
+        const streamError = classifyStreamError(err, modelId);
+        logApiError(modelId, streamError.type);
+        
+        // Stop retrying if no key or last model
+        if (i === modelsToTry.length - 1 || streamError.type === 'no_key') {
+          callbacks.onError(streamError);
+          return;
+        }
+        console.log(`[Google AI] Falling back to next model...`);
+        accumulated = ''; // reset for next attempt
       }
-      const streamError = classifyStreamError(err, modelId);
-      logApiError(modelId, streamError.type);
-      callbacks.onError(streamError);
-    } finally {
-      abortRef.current = null;
     }
   }, []);
 
   const sendSilentQuery = useCallback(async (
     prompt: string,
-    modelId: string,
+    modelIds: string | string[],
     signal?: AbortSignal,
   ): Promise<{ text: string; error?: StreamError }> => {
+    const modelsToTry = Array.isArray(modelIds) ? modelIds : [modelIds];
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
     if (!apiKey) {
       return { text: '', error: NO_KEY_ERROR };
     }
 
     let accumulated = '';
-    logApiCall(modelId, prompt);
 
-    try {
-      const google = createGoogleGenerativeAI({ apiKey });
-      const model = google(modelId);
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const modelId = modelsToTry[i];
+      logApiCall(modelId, prompt);
 
-      const result = streamText({
-        model,
-        prompt,
-        abortSignal: signal,
-        maxRetries: 0,
-      });
+      try {
+        const google = createGoogleGenerativeAI({ apiKey });
+        const model = google(modelId);
 
-      for await (const chunk of result.textStream) {
-        accumulated += chunk;
-      }
+        const result = streamText({
+          model,
+          prompt,
+          abortSignal: signal,
+          maxRetries: 0,
+        });
 
-      logApiSuccess(modelId, accumulated.length);
-      return { text: accumulated };
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+        for await (const chunk of result.textStream) {
+          accumulated += chunk;
+        }
+
+        logApiSuccess(modelId, accumulated.length);
         return { text: accumulated };
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          return { text: accumulated };
+        }
+        const error = classifyStreamError(err, modelId);
+        logApiError(modelId, error.type);
+        
+        if (i === modelsToTry.length - 1 || error.type === 'no_key') {
+          return { text: '', error };
+        }
+        accumulated = '';
       }
-      const error = classifyStreamError(err, modelId);
-      logApiError(modelId, error.type);
-      return { text: '', error };
     }
+    return { text: '', error: { type: 'unknown', message: 'All fallback models failed.' } };
   }, []);
 
   const abort = useCallback(() => {

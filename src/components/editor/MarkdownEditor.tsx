@@ -149,9 +149,11 @@ export const MarkdownEditor: React.FC = () => {
     const promptText = compileInlineContext(localContent, cursorIndex, cmdKQuery);
     const models = resolveModelEndpoints('SKILL_WRITER');
 
+    const modelIds = models.map(m => m.modelId);
+
     let accumulatedText = '';
 
-    sendQuery(promptText, models[0].modelId, {
+    sendQuery(promptText, modelIds, {
       onChunk: (text) => {
         const view = editorRef.current?.view;
         if (!view || !draftOriginalRef.current) return;

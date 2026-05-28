@@ -142,8 +142,9 @@ export const ChatSidebar: React.FC = () => {
         chartDefinition,
         errorString,
         async (repairPrompt) => {
-          const modelId = architectureModels[0]?.modelId || 'gemini-2.5-flash';
-          const { text, error } = await sendSilentQuery(repairPrompt, modelId);
+          const modelIds = architectureModels.map(m => m.modelId);
+          if (modelIds.length === 0) modelIds.push('gemini-2.5-flash');
+          const { text, error } = await sendSilentQuery(repairPrompt, modelIds);
 
           if (error || !text) {
             reportResult(null);
