@@ -80,12 +80,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
 
   // Re-sync content if active file changes
   useEffect(() => {
-    if (editor && activeFile && (editor.storage as any).markdown.getMarkdown() !== activeFile.content) {
-      editor.commands.setContent(activeFile.content);
+    if (editor && activeFile) {
+      if ((editor.storage as any).markdown.getMarkdown() !== activeFile.content) {
+        editor.commands.setContent(activeFile.content);
+      }
       const words = activeFile.content.trim() ? activeFile.content.trim().split(/\s+/).length : 0;
       setWordCount(words);
     }
-  }, [activeFile?.id, editor]);
+  }, [activeFile?.id, activeFile?.content, editor]);
 
   if (!activeFile) {
     return (
