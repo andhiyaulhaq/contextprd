@@ -150,7 +150,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
       text: view.state.sliceDoc(selection.from, selection.to)
     };
 
-    const promptText = compileInlineContext(localContent, cursorIndex, cmdKQuery);
+    const textBefore = view.state.sliceDoc(0, selection.from);
+    const textAfter = view.state.sliceDoc(selection.to);
+    const promptText = compileInlineContext(textBefore, textAfter, cmdKQuery, draftOriginalRef.current.text);
     const models = resolveModelEndpoints('SKILL_WRITER');
 
     const modelIds = models.map(m => m.modelId);
@@ -167,7 +169,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
         // will overshoot the CodeMirror document length and start deleting the user's document!
         const normalizedText = text.replace(/\r\n/g, '\n');
         
-        const currentTo = draftOriginalRef.current.from + accumulatedText.length;
+        // On the first chunk, replace the entire user selection.
+        // On subsequent chunks, replace the previously generated text.
+        const currentTo = accumulatedText.length === 0 
+          ? draftOriginalRef.current.to 
+          : draftOriginalRef.current.from + accumulatedText.length;
         
         const transaction = view.state.update({
           changes: { from: draftOriginalRef.current.from, to: currentTo, insert: normalizedText }

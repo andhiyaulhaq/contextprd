@@ -127,10 +127,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
       text: editor.getHTML()
     };
 
+    const selectedText = selection.empty ? '' : editor.state.doc.textBetween(selection.from, selection.to, '\n');
+
+    const textAfter = editor.state.doc.textBetween(selection.to, editor.state.doc.content.size, '\n');
+
     const promptText = compileInlineContext(
-      (editor.storage as any).markdown.getMarkdown(), 
-      textBefore.length, 
-      cmdKQuery
+      textBefore, 
+      textAfter, 
+      cmdKQuery,
+      selectedText
     );
     const models = resolveModelEndpoints('SKILL_WRITER');
 

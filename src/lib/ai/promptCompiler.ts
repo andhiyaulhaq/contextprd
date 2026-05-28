@@ -78,24 +78,31 @@ Return your changes cleanly. If diagrams are required, generate them entirely in
 }
 
 export function compileInlineContext(
-  content: string,
-  cursorIndex: number,
-  userQuery: string
+  textBefore: string,
+  textAfter: string,
+  userQuery: string,
+  selectedText: string = ''
 ): string {
-  const textBefore = content.substring(0, cursorIndex);
-  const textAfter = content.substring(cursorIndex);
   
   return `
-[DOCUMENT CONTEXT BEFORE CURSOR]
+You are an advanced AI editor assistant. Your task is to generate content to insert into a Markdown document based on the user's instruction.
+
+[DOCUMENT CONTEXT BEFORE INSERTION POINT]
 ${textBefore}
 
+${selectedText ? `[TEXT SELECTED BY USER TO BE REPLACED/EDITED]\n${selectedText}\n` : ''}
 <INSERTION_POINT>
 
-[DOCUMENT CONTEXT AFTER CURSOR]
+[DOCUMENT CONTEXT AFTER INSERTION POINT]
 ${textAfter}
 
-INSTRUCTION: ${userQuery}
-Generate the text that should be placed exactly at the <INSERTION_POINT>.
-Return ONLY the raw markdown content to be inserted. Do not include introductory text.
+USER INSTRUCTION: ${userQuery}
+
+Generate the exact Markdown content to be placed at the <INSERTION_POINT>.
+CRITICAL RULES:
+1. Do NOT repeat or rewrite the surrounding context.
+2. Output ONLY the new content to be inserted.
+3. Do NOT include conversational filler like "Here is the diagram".
+4. If generating a diagram, output the raw \`\`\`mermaid fence directly.
   `.trim();
 }
