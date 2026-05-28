@@ -71,7 +71,10 @@ ${mentionedContexts}
 USER OPERATIONAL INSTRUCTION:
 ${userQuery}
 
-Return your changes cleanly. If diagrams are required, generate them entirely inside functional code markdown fences using standard syntax layout constructs (\`\`\`mermaid).
+Return your changes cleanly. 
+If diagrams are required:
+1. Generate them entirely inside functional code markdown fences using standard syntax layout constructs (\`\`\`mermaid).
+2. If the diagram contains multiple disconnected subgraphs, you MUST link them sequentially using invisible links (~~~) to force correct chronological left-to-right rendering order.
 `.trim();
 
   return { prompt, headers };
@@ -104,5 +107,6 @@ CRITICAL RULES:
 2. Output ONLY the new content to be inserted.
 3. Do NOT include conversational filler like "Here is the diagram".
 4. If generating a diagram, output the raw \`\`\`mermaid fence directly.
+5. If a Mermaid diagram contains multiple disconnected subgraphs, you MUST link them sequentially using invisible links (~~~) to force correct chronological left-to-right rendering order.
   `.trim();
 }
