@@ -6,6 +6,21 @@ interface EditorToolbarProps {
 }
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor }) => {
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+
+  React.useEffect(() => {
+    if (!editor) return;
+
+    // Tiptap doesn't always deeply trigger React re-renders for selection changes
+    // when the editor is passed down as a prop. This explicit transaction listener 
+    // forces the toolbar to re-evaluate active states on every keystroke/click.
+    editor.on('transaction', forceUpdate);
+
+    return () => {
+      editor.off('transaction', forceUpdate);
+    };
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
