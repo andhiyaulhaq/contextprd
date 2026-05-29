@@ -9,6 +9,7 @@ import { Markdown } from 'tiptap-markdown';
 import { useProjectStore } from '../../store/useProjectStore';
 import { EditorToolbar } from './EditorToolbar';
 import { useAIStream } from '../../hooks/useAIStream';
+import { useLayoutStore } from '../../store/useLayoutStore';
 import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { CodeBlockNodeView } from './CodeBlockNodeView';
@@ -38,6 +39,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
   const draftOriginalRef = useRef<{from: number, to: number, text: string} | null>(null);
   
   const { sendQuery, abort } = useAIStream();
+  const { toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
 
   const editor = useEditor({
     extensions: [
@@ -187,8 +189,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
 
   return (
     <div className="flex flex-col h-full relative bg-gray-950 text-gray-200" onKeyDown={handleKeyDown}>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50 h-[45px]">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 bg-gray-950/50 h-[45px]">
         <div className="flex items-center gap-2 min-w-0">
+          <button onClick={toggleLeftSidebar} className="p-1 -ml-1 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer active:scale-95" title="Toggle Project Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
           <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
@@ -206,6 +214,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
               VISUAL
             </span>
           )}
+          <button onClick={toggleRightSidebar} className="p-1 -mr-1 ml-1 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer active:scale-95" title="Toggle AI Chat">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+          </button>
         </div>
       </div>
       

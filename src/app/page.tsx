@@ -8,6 +8,7 @@ import { MarkdownEditor } from '../components/editor/MarkdownEditor';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { useProjectStore } from '../store/useProjectStore';
 import { useConversationStore } from '../store/useConversationStore';
+import { useLayoutStore } from '../store/useLayoutStore';
 
 function AppLoadingSkeleton() {
   return (
@@ -23,6 +24,7 @@ function AppLoadingSkeleton() {
 export default function Home() {
   const projectHydrated = useProjectStore((s) => s.hasHydrated);
   const conversationHydrated = useConversationStore((s) => s.hasHydrated);
+  const { isLeftSidebarOpen, isRightSidebarOpen } = useLayoutStore();
   const [editorMode, setEditorMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg');
 
   if (!projectHydrated || !conversationHydrated) {
@@ -31,10 +33,12 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-gray-200">
-      <aside className="w-64 shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
-        <ProjectSwitcher />
-        <div className="flex-1 overflow-y-auto">
-          <ProjectTree />
+      <aside className={`shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${isLeftSidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0'}`}>
+        <div className="w-64 h-full flex flex-col">
+          <ProjectSwitcher />
+          <div className="flex-1 overflow-y-auto">
+            <ProjectTree />
+          </div>
         </div>
       </aside>
 
@@ -46,8 +50,10 @@ export default function Home() {
         )}
       </main>
 
-      <aside className="w-80 shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col">
-        <ChatSidebar />
+      <aside className={`shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${isRightSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-l-0'}`}>
+        <div className="w-80 h-full flex flex-col">
+          <ChatSidebar />
+        </div>
       </aside>
     </div>
   );

@@ -11,6 +11,7 @@ import { StateField, StateEffect, Transaction } from '@codemirror/state';
 import { useAIStream } from '../../hooks/useAIStream';
 import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
+import { useLayoutStore } from '../../store/useLayoutStore';
 
 type ViewMode = 'edit' | 'preview' | 'split';
 
@@ -44,6 +45,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
   const projects = useProjectStore((s) => s.projects);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const updateFileContent = useProjectStore((s) => s.updateFileContent);
+  const { toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
 
   const project = activeProjectId ? projects[activeProjectId] : null;
   const activeFile = project
@@ -252,8 +254,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
 
   return (
     <div className="flex flex-col h-full relative" onKeyDown={handleKeyDown}>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50 h-[45px]">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 bg-gray-950/50 h-[45px]">
         <div className="flex items-center gap-2 min-w-0">
+          <button onClick={toggleLeftSidebar} className="p-1 -ml-1 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer active:scale-95" title="Toggle Project Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
           <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
@@ -280,6 +288,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
                <button onClick={() => onModeChange('wysiwyg')} className="cursor-pointer transition-colors text-[10px] px-2 py-1 rounded-sm uppercase tracking-wider font-semibold text-gray-500 hover:text-gray-300">VISUAL</button>
              </div>
           )}
+          <button onClick={toggleRightSidebar} className="p-1 -mr-1 ml-1 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors cursor-pointer active:scale-95" title="Toggle AI Chat">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+          </button>
         </div>
       </div>
       <div className="flex flex-1 overflow-hidden relative">
