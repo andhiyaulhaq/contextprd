@@ -31,3 +31,11 @@
 *   **Power User:** Daily active, relies on keyboard shortcuts, expects < 100ms UI feedback.
 *   **Occasional User:** Logs in weekly, needs clear onboarding hints and progressive disclosure of advanced features.
 *   **Admin:** Manages team members, billing, and audit logs — requires a dedicated settings panel.
+
+## Core Feature State Diagram
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Published
+    Published --> [*]
+```

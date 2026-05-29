@@ -1,8 +1,8 @@
 import { useCallback, useRef } from 'react';
 import { streamText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 
-export type StreamErrorType = 'no_key' | 'no_endpoint' | 'rate_limit' | 'network' | 'unknown';
+export type StreamErrorType = 'no_endpoint' | 'rate_limit' | 'network' | 'unknown';
 
 export interface StreamError {
   type: StreamErrorType;
@@ -15,22 +15,20 @@ interface StreamCallbacks {
   onError: (error: StreamError) => void;
 }
 
-const NO_KEY_ERROR: StreamError = {
-  type: 'no_key',
-  message: 'Google AI Studio API key not configured. Set NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY in .env.local',
-};
+// Initialize the OpenAI provider wrapper tailored for 9Router
+const nineRouter = createOpenAI({
+  baseURL: process.env.AI_BASE_URL || 'http://localhost:20128/v1',
+  apiKey: process.env.AI_API_KEY || '9router-local-placeholder',
+});
 
 function classifyStreamError(err: any, modelId: string): StreamError {
   const status = err.statusCode ?? err.status;
 
-  if (status === 401 || status === 403) {
-    return { type: 'no_key', message: 'Google Auth error. Check your API key.' };
-  }
-  if (status === 429) {
-    return { type: 'rate_limit', message: 'Rate limited by Google. Please wait a moment and try again.' };
+  if (status === 429 || status === 503 || err.message?.includes('high demand') || err.message?.includes('Quota exceeded')) {
+    return { type: 'rate_limit', message: '9Router rate limit reached.' };
   }
   if (err.message?.includes('fetch failed')) {
-    return { type: 'network', message: 'Network error. Check your internet connection.' };
+    return { type: 'network', message: 'Network error. Is 9Router running on port 20128?' };
   }
   return { type: 'unknown', message: `${modelId} returned an error: ${err.message}` };
 }
@@ -40,7 +38,7 @@ export function useAIStream() {
 
   function logApiCall(modelId: string, prompt: string) {
     console.log(
-      `%c[Google AI] %c${modelId}`,
+      `%c[9Router] %c${modelId}`,
       'color: #10b981; font-weight: bold;',
       'color: #a1a1aa;',
       `prompt: ${prompt.slice(0, 120)}${prompt.length > 120 ? '...' : ''} (${prompt.length} chars)`,
@@ -49,7 +47,7 @@ export function useAIStream() {
 
   function logApiSuccess(modelId: string, outputLength: number) {
     console.log(
-      `%c[Google AI] %c${modelId} %c✓ ${outputLength} chars`,
+      `%c[9Router] %c${modelId} %c✓ ${outputLength} chars`,
       'color: #10b981; font-weight: bold;',
       'color: #a1a1aa;',
       'color: #22c55e;',
@@ -58,7 +56,7 @@ export function useAIStream() {
 
   function logApiError(modelId: string, errorType: string) {
     console.log(
-      `%c[Google AI] %c${modelId} %c✗ ${errorType}`,
+      `%c[9Router] %c${modelId} %c✗ ${errorType}`,
       'color: #10b981; font-weight: bold;',
       'color: #a1a1aa;',
       'color: #ef4444;',
@@ -70,58 +68,41 @@ export function useAIStream() {
     modelIds: string | string[],
     callbacks: StreamCallbacks,
   ) => {
+    // With 9Router, we rely on the internal fallback combo (e.g., 'free-combo')
+    // so we just take the first model passed in.
     const modelsToTry = Array.isArray(modelIds) ? modelIds : [modelIds];
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) {
-      callbacks.onError(NO_KEY_ERROR);
-      return;
-    }
-
+    const targetModel = modelsToTry[0].replace('9router:', '');
+    
     const controller = new AbortController();
     abortRef.current = controller;
 
     let accumulated = '';
 
-    for (let i = 0; i < modelsToTry.length; i++) {
-      const modelId = modelsToTry[i];
-      logApiCall(modelId, prompt);
+    logApiCall(targetModel, prompt);
 
-      try {
-        const google = createGoogleGenerativeAI({ apiKey });
-        const model = google(modelId);
+    try {
+      const result = await streamText({
+        model: nineRouter(targetModel),
+        prompt,
+        abortSignal: controller.signal,
+      });
 
-        const result = streamText({
-          model,
-          prompt,
-          abortSignal: controller.signal,
-          maxRetries: 0,
-        });
-
-        for await (const chunk of result.textStream) {
-          accumulated += chunk;
-          callbacks.onChunk(accumulated);
-        }
-
-        logApiSuccess(modelId, accumulated.length);
-        callbacks.onComplete(accumulated);
-        return; // Success, break loop
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          console.log(`%c[Google AI] %c${modelId} %caborted`, 'color: #10b981; font-weight: bold;', 'color: #a1a1aa;', 'color: #f59e0b;');
-          callbacks.onComplete(accumulated);
-          return;
-        }
-        const streamError = classifyStreamError(err, modelId);
-        logApiError(modelId, streamError.type);
-        
-        // Stop retrying if no key or last model
-        if (i === modelsToTry.length - 1 || streamError.type === 'no_key') {
-          callbacks.onError(streamError);
-          return;
-        }
-        console.log(`[Google AI] Falling back to next model...`);
-        accumulated = ''; // reset for next attempt
+      for await (const chunk of result.textStream) {
+        accumulated += chunk;
+        callbacks.onChunk(accumulated);
       }
+
+      logApiSuccess(targetModel, accumulated.length);
+      callbacks.onComplete(accumulated);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log(`%c[9Router] %c${targetModel} %caborted`, 'color: #10b981; font-weight: bold;', 'color: #a1a1aa;', 'color: #f59e0b;');
+        callbacks.onComplete(accumulated);
+        return;
+      }
+      const streamError = classifyStreamError(err, targetModel);
+      logApiError(targetModel, streamError.type);
+      callbacks.onError(streamError);
     }
   }, []);
 
@@ -131,48 +112,33 @@ export function useAIStream() {
     signal?: AbortSignal,
   ): Promise<{ text: string; error?: StreamError }> => {
     const modelsToTry = Array.isArray(modelIds) ? modelIds : [modelIds];
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) {
-      return { text: '', error: NO_KEY_ERROR };
-    }
-
+    const targetModel = modelsToTry[0].replace('9router:', '');
+    
     let accumulated = '';
 
-    for (let i = 0; i < modelsToTry.length; i++) {
-      const modelId = modelsToTry[i];
-      logApiCall(modelId, prompt);
+    logApiCall(targetModel, prompt);
 
-      try {
-        const google = createGoogleGenerativeAI({ apiKey });
-        const model = google(modelId);
+    try {
+      const result = await streamText({
+        model: nineRouter(targetModel),
+        prompt,
+        abortSignal: signal,
+      });
 
-        const result = streamText({
-          model,
-          prompt,
-          abortSignal: signal,
-          maxRetries: 0,
-        });
-
-        for await (const chunk of result.textStream) {
-          accumulated += chunk;
-        }
-
-        logApiSuccess(modelId, accumulated.length);
-        return { text: accumulated };
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          return { text: accumulated };
-        }
-        const error = classifyStreamError(err, modelId);
-        logApiError(modelId, error.type);
-        
-        if (i === modelsToTry.length - 1 || error.type === 'no_key') {
-          return { text: '', error };
-        }
-        accumulated = '';
+      for await (const chunk of result.textStream) {
+        accumulated += chunk;
       }
+
+      logApiSuccess(targetModel, accumulated.length);
+      return { text: accumulated };
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        return { text: accumulated };
+      }
+      const error = classifyStreamError(err, targetModel);
+      logApiError(targetModel, error.type);
+      return { text: '', error };
     }
-    return { text: '', error: { type: 'unknown', message: 'All fallback models failed.' } };
   }, []);
 
   const abort = useCallback(() => {

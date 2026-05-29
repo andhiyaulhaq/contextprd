@@ -130,11 +130,7 @@ export const ChatSidebar: React.FC = () => {
       _blockIndex: number,
       reportResult: (fixedCode: string | null) => void,
     ) => {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
-      if (!apiKey) {
-        reportResult(null);
-        return;
-      }
+
 
       const architectureModels = resolveModelEndpoints('SKILL_ARCHITECT');
 
@@ -143,7 +139,6 @@ export const ChatSidebar: React.FC = () => {
         errorString,
         async (repairPrompt) => {
           const modelIds = architectureModels.map(m => m.modelId);
-          if (modelIds.length === 0) modelIds.push('gemini-2.5-flash');
           const { text, error } = await sendSilentQuery(repairPrompt, modelIds);
 
           if (error || !text) {

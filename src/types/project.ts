@@ -11,6 +11,7 @@ export interface FileNode {
 
 export interface DomainProfile {
   category: DomainCategory;
+  description: string;          // user-provided project description (used for AI seeding + chat context)
   systemGuardrails: string;
   templateBlueprint: Record<string, string>;
 }

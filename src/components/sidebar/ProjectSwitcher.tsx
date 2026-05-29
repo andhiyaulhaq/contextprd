@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useSessionStore } from '../../store/useSessionStore';
+import { useProjectSeeder } from '../../hooks/useProjectSeeder';
 import { DomainCategory } from '../../types/project';
 
 const CATEGORIES: { value: DomainCategory; label: string; desc: string }[] = [
@@ -21,29 +22,123 @@ const CATEGORY_LABELS: Record<DomainCategory, string> = {
 
 const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const createProject = useProjectStore((s) => s.createProject);
+  const { seedProject } = useProjectSeeder();
+
   const [name, setName] = useState('');
   const [category, setCategory] = useState<DomainCategory>('WEB_APP');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<{ phase: 'manifest' | 'files'; done: number; total: number } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
       setError('Project name is required');
       return;
     }
-    createProject(trimmed, category);
+
+    const projectId = createProject(trimmed, category, description.trim());
+
+    // No description — use static template immediately (existing behaviour)
+    if (!description.trim()) {
+      onClose();
+      return;
+    }
+
+    // Description provided — run the two-phase AI seeding
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsSeeding(true);
+
+    try {
+      await seedProject(
+        projectId,
+        description.trim(),
+        (progress) => setSeedProgress(progress),
+        controller.signal,
+      );
+    } catch {
+      // Aborted or errored — project still exists with static template
+    } finally {
+      setIsSeeding(false);
+      abortRef.current = null;
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+    setIsSeeding(false);
     onClose();
   };
+
+  const hasDescription = description.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+
+        {/* ── Header ── */}
         <div className="px-5 py-4 border-b border-gray-800">
           <h2 className="text-sm font-semibold text-gray-200">New Project</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Create a new PRD project</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {isSeeding ? 'Personalizing your project files with AI…' : 'Create a new PRD project'}
+          </p>
         </div>
+
+        {/* ── Seeding Progress View ── */}
+        {isSeeding ? (
+          <div className="p-5 space-y-5">
+
+            {/* Phase indicator */}
+            {seedProgress?.phase === 'manifest' ? (
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                <span className="text-sm text-gray-300">✦ Generating project manifest…</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                    <span className="text-sm text-gray-300">Generating files…</span>
+                  </div>
+                  <span className="text-xs text-gray-500 tabular-nums">
+                    {seedProgress?.done ?? 0} / {seedProgress?.total ?? 0}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${seedProgress && seedProgress.total > 0
+                        ? Math.round((seedProgress.done / seedProgress.total) * 100)
+                        : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="w-full px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+
+        /* ── Form View ── */
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+
+          {/* Name */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Name</label>
             <input
@@ -56,6 +151,8 @@ const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => 
             />
             {error && <p className="text-xs text-rose-400 mt-1">{error}</p>}
           </div>
+
+          {/* Domain */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Domain</label>
             <div className="space-y-1.5">
@@ -64,10 +161,11 @@ const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                   key={cat.value}
                   type="button"
                   onClick={() => setCategory(cat.value)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border cursor-pointer transition-all active:scale-[0.98] ${category === cat.value
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border cursor-pointer transition-all active:scale-[0.98] ${
+                    category === cat.value
                       ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
                       : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
-                    }`}
+                  }`}
                 >
                   <div className="font-medium">{cat.label}</div>
                   <div className="text-xs opacity-70">{cat.desc}</div>
@@ -75,6 +173,36 @@ const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => 
               ))}
             </div>
           </div>
+
+          {/* Description */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-gray-400">
+                Description
+                <span className="ml-1 text-gray-600 font-normal">(optional)</span>
+              </label>
+              <span className={`text-xs tabular-nums ${
+                description.length > 450 ? 'text-amber-500' : 'text-gray-600'
+              }`}>
+                {description.length}/500
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              maxLength={500}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe your project — the AI will use this to personalize your starter files. Leave blank to use the default template."
+              className="w-full bg-gray-800 text-gray-200 text-sm rounded-lg px-3 py-2 border border-gray-700 outline-none placeholder-gray-600 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all resize-none leading-relaxed"
+            />
+            {hasDescription && (
+              <p className="text-xs text-indigo-400/70 mt-1">
+                ✦ AI will personalize your starter files using this description.
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
           <div className="flex gap-2 pt-1">
             <button
               type="button"
@@ -87,14 +215,17 @@ const CreateProjectDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => 
               type="submit"
               className="flex-1 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg cursor-pointer hover:bg-indigo-500 transition-all active:scale-[0.98]"
             >
-              Create
+              {hasDescription ? 'Create & Generate ✦' : 'Create'}
             </button>
           </div>
         </form>
+        )}
+
       </div>
     </div>
   );
 };
+
 
 const DeleteProjectDialog: React.FC<{
   projectName: string;

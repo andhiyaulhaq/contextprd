@@ -24,3 +24,12 @@
 *   No native mobile app in v1 — responsive web + PWA only.
 *   No offline-first requirement — stable internet connection assumed for core features.
 *   No self-hosted deployment option in v1.
+
+## User Journey Overview
+```mermaid
+mindmap
+  root((User))
+    (Onboarding)
+    (Core Workflow)
+    (Settings)
+```

@@ -13,7 +13,7 @@
     "tauri": "node scripts/generate-templates.mjs && tauri"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.79",
+    "@ai-sdk/openai": "^3.0.66",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.6.0",

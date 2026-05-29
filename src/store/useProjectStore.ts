@@ -14,7 +14,7 @@ export interface ProjectState {
 
   setHasHydrated: (state: boolean) => void;
   setActiveProject: (id: string) => void;
-  createProject: (name: string, category: DomainCategory) => string;
+  createProject: (name: string, category: DomainCategory, description?: string) => string;
   renameProject: (id: string, name: string) => void;
   deleteProject: (id: string) => void;
   setActiveFile: (projectId: string, fileId: string) => void;
@@ -22,6 +22,7 @@ export interface ProjectState {
   renameFile: (projectId: string, fileId: string, newName: string) => void;
   deleteFile: (projectId: string, fileId: string) => void;
   updateFileContent: (projectId: string, fileId: string, updatedContent: string) => void;
+  updateProjectDescription: (id: string, description: string) => void;
 }
 
 const updateNode = (nodes: FileNode[], fileId: string, content: string): FileNode[] =>
@@ -50,7 +51,7 @@ export const useProjectStore = create<ProjectState>()(
           }
         },
 
-        createProject: (name, category) => {
+        createProject: (name, category, description) => {
           const id = `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
           const fileTree = blueprintToFileTree(category);
 
@@ -60,6 +61,7 @@ export const useProjectStore = create<ProjectState>()(
             rootPath: `/${name.toLowerCase().replace(/\s+/g, '-')}`,
             profile: {
               category,
+              description: description ?? '',
               systemGuardrails: `Domain: ${category}`,
               templateBlueprint: {},
             },
@@ -231,6 +233,21 @@ export const useProjectStore = create<ProjectState>()(
                 [projectId]: {
                   ...project,
                   fileTree: updateNode(project.fileTree, fileId, updatedContent),
+                },
+              },
+            };
+          }),
+
+        updateProjectDescription: (id, description) =>
+          set((state) => {
+            const project = state.projects[id];
+            if (!project) return state;
+            return {
+              projects: {
+                ...state.projects,
+                [id]: {
+                  ...project,
+                  profile: { ...project.profile, description },
                 },
               },
             };

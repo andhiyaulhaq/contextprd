@@ -25,6 +25,7 @@ describe('compileContextPayload', () => {
     rootPath: '/project',
     profile: {
       category: 'MOBILE_APP',
+      description: 'A test mobile app for unit testing',
       systemGuardrails: 'App Store rules, background sync, touch targets',
       templateBlueprint: {},
     },

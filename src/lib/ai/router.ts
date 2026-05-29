@@ -7,37 +7,13 @@ export interface ModelRoute {
 
 const MODEL_REGISTRY: Record<SkillIntent, ModelRoute[]> = {
   SKILL_WRITER: [
-    { modelId: 'gemini-3.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3-flash-preview', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.0-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-flash-latest', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3.1-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.5-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.0-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-flash-lite-latest', costPerMillionInput: 0.00 },
+    { modelId: '9router:free-combo', costPerMillionInput: 0 },
   ],
   SKILL_ARCHITECT: [
-    { modelId: 'gemini-3.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3-flash-preview', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.0-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-flash-latest', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3.1-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.5-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.0-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-flash-lite-latest', costPerMillionInput: 0.00 },
+    { modelId: '9router:free-combo', costPerMillionInput: 0 },
   ],
   SKILL_AUDITOR: [
-    { modelId: 'gemini-3.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3-flash-preview', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.5-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-2.0-flash', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-flash-latest', costPerMillionInput: 0.075 },
-    { modelId: 'gemini-3.1-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.5-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-2.0-flash-lite', costPerMillionInput: 0.00 },
-    { modelId: 'gemini-flash-lite-latest', costPerMillionInput: 0.00 },
+    { modelId: '9router:free-combo', costPerMillionInput: 0 },
   ],
 };
 

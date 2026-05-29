@@ -43,3 +43,11 @@
 *   **Toast:** Slide-in from bottom-right, auto-dismiss after 4s, manual dismiss ✕.
 *   **Skeleton loading:** Pulsing gray blocks matching the shape of the content — never blank white flash.
 *   **Empty state:** Illustration + headline + single primary CTA (never an empty div).
+
+## Application Flowchart
+```mermaid
+flowchart LR
+    Login --> Dashboard
+    Dashboard --> Settings
+    Dashboard --> Document
+```

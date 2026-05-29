@@ -1,33 +1,30 @@
 # Web App: Architecture Blueprint
 
 ## Technology Stack
-| Layer | Technology | Rationale |
-|---|---|---|
-| Frontend | Next.js 14 (App Router), TypeScript | SSR + static export, type safety |
-| Styling | Tailwind CSS + shadcn/ui | Utility-first, accessible component primitives |
-| State | Zustand (client) + React Query v5 (server) | Separation of UI state and server cache |
-| Database | PostgreSQL 16 (primary), Redis 7 (cache/queue) | ACID compliance + high-throughput ephemeral data |
-| Auth | NextAuth.js v5 (JWT + OAuth) | Built-in provider support, edge-compatible session handling |
-| File Storage | AWS S3 + CloudFront CDN | Scalable object storage with global edge delivery |
-| API | REST (v1) — GraphQL considered for v2 | Simpler HTTP caching, broad client compatibility |
+- **Frontend**: Next.js 14 (App Router), TypeScript. Hosted on **Cloudflare Pages**.
+- **Styling**: Tailwind CSS + shadcn/ui. Utility-first, accessible component primitives.
+- **State**: Zustand (client) + React Query v5 (server). Separation of UI state and server cache.
+- **Database**: **Cloudflare D1** (Serverless SQLite). High-throughput edge-ready database.
+- **Cache/Queue**: **Cloudflare KV**. Serverless key-value store for sessions and caching.
+- **Auth**: NextAuth.js v5 (JWT + OAuth). Edge-compatible session handling.
+- **File Storage**: **Cloudflare R2**. S3-compatible, zero egress fee object storage.
+- **API**: REST (v1) — GraphQL considered for v2. Simpler HTTP caching, broad client compatibility.
 
 ## System Architecture Diagram
-```
-Browser → CloudFront CDN → Next.js App (Vercel)
-                                  ↓
-                       API Routes / Route Handlers
-                          ↙               ↘
-               PostgreSQL 16          Redis 7
-             (persistent data)    (sessions, cache, queues)
-                                          ↓
-                                  S3 (file/media storage)
+```mermaid
+graph TD
+    Client[Browser] --> CDN[Cloudflare CDN]
+    CDN --> App[Cloudflare Pages]
+    App --> DB[(Cloudflare D1)]
+    App --> Cache[(Cloudflare KV)]
+    App --> Storage[Cloudflare R2]
 ```
 
 ## Caching Strategy
 *   **Client:** React Query stale-while-revalidate. TTL: 60s for lists, 5min for detail views.
-*   **Edge:** Vercel Edge Cache for static assets and public GET responses. `Cache-Control: s-maxage=3600, stale-while-revalidate=86400`.
-*   **Server:** Redis for session tokens, rate-limit counters, and hot DB query results (TTL: 5min).
-*   **Database:** PostgreSQL connection pooling via PgBouncer (pool_mode=transaction, pool_size=20).
+*   **Edge:** Cloudflare Page Rules/Cache Rules for static assets. `Cache-Control: s-maxage=3600, stale-while-revalidate=86400`.
+*   **Server:** Cloudflare KV for session tokens and rate-limit counters (TTL: 5min).
+*   **Database:** Cloudflare D1 (serverless, no connection pooling required).
 
 ## Core Data Model
 ```sql
