@@ -81,13 +81,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
   // Re-sync content if active file changes
   useEffect(() => {
     if (editor && activeFile) {
-      if ((editor.storage as any).markdown.getMarkdown() !== activeFile.content) {
-        editor.commands.setContent(activeFile.content);
-      }
+      // Defer setContent past React's commit phase.
+      // TipTap's setContent calls flushSync internally — calling it directly
+      // during a useEffect that fires synchronously inside a render cycle
+      // causes the "flushSync inside a lifecycle method" React warning.
+      queueMicrotask(() => {
+        if ((editor.storage as any).markdown.getMarkdown() !== activeFile.content) {
+          editor.commands.setContent(activeFile.content);
+        }
+      });
       const words = activeFile.content.trim() ? activeFile.content.trim().split(/\s+/).length : 0;
       setWordCount(words);
     }
   }, [activeFile?.id, activeFile?.content, editor]);
+
 
   if (!activeFile) {
     return (
