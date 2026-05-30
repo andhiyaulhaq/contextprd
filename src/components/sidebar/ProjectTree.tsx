@@ -45,6 +45,25 @@ export const ProjectTree: React.FC = () => {
   const [isNewFileId, setIsNewFileId] = React.useState<string | null>(null);
   const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
   const [isDownloadMenuOpen, setIsDownloadMenuOpen] = React.useState(false);
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleOutsideClick = () => setOpenMenuId(null);
+    if (openMenuId) document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [openMenuId]);
+
+  const handleDownloadFile = (fileName: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const project = activeProjectId ? projects[activeProjectId] : null;
 
@@ -133,33 +152,70 @@ export const ProjectTree: React.FC = () => {
           )}
 
           {!isDir && editingId !== node.id && (
-            <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="relative flex items-center shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEditingId(node.id);
-                  setEditName(node.name.replace(/\.md$/i, ''));
+                  setOpenMenuId(openMenuId === node.id ? null : node.id);
                 }}
-                className="p-1 rounded cursor-pointer text-gray-500 hover:text-indigo-400 hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all"
-                title="Rename"
+                className={`p-1 rounded cursor-pointer transition-all ${
+                  openMenuId === node.id
+                    ? 'text-indigo-400 bg-gray-800 opacity-100'
+                    : 'text-gray-500 hover:text-indigo-400 hover:bg-gray-800 opacity-0 group-hover:opacity-100'
+                }`}
+                title="More Actions"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeleteDialogFile({ id: node.id, name: node.name });
-                }}
-                className="p-1 rounded cursor-pointer text-gray-500 hover:text-rose-400 hover:bg-gray-800 transition-all hover:scale-105 active:scale-95"
-                title="Delete"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </span>
+              
+              {openMenuId === node.id && (
+                <div 
+                  className="absolute right-0 top-6 w-32 bg-gray-900/95 backdrop-blur-md border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => {
+                      setEditingId(node.id);
+                      setEditName(node.name.replace(/\.md$/i, ''));
+                      setOpenMenuId(null);
+                    }}
+                    className="px-3 py-1.5 text-left text-[11px] text-gray-300 hover:text-indigo-300 hover:bg-gray-800 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDownloadFile(node.name, node.content);
+                      setOpenMenuId(null);
+                    }}
+                    className="px-3 py-1.5 text-left text-[11px] text-gray-300 hover:text-indigo-300 hover:bg-gray-800 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                  </button>
+                  <div className="h-px bg-gray-800/80 my-0.5 mx-1" />
+                  <button
+                    onClick={() => {
+                      setDeleteDialogFile({ id: node.id, name: node.name });
+                      setOpenMenuId(null);
+                    }}
+                    className="px-3 py-1.5 text-left text-[11px] text-gray-300 hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         
