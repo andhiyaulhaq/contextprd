@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import mermaid from 'mermaid';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -22,6 +23,24 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
   const [hasError, setHasError] = useState<boolean>(false);
+  
+  const themeSetting = useSettingsStore((s) => s.theme);
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(false);
+
+  // Subscribe to the browser's theme preference (valid useEffect usage)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemPrefersDark(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Derive the active theme synchronously (no double rendering)
+  const activeTheme = themeSetting === 'system' 
+    ? (systemPrefersDark ? 'dark' : 'light') 
+    : themeSetting;
 
   useEffect(() => {
     if (repairStatus === 'dead') return;
@@ -32,6 +51,12 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({
         setHasError(false);
         setSvgContent('');
         const elementId = `mermaid-render-${Math.random().toString(36).substring(2, 9)}`;
+
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: activeTheme === 'light' ? 'default' : 'dark',
+          securityLevel: 'loose',
+        });
 
         const isValid = await mermaid.parse(chartDefinition);
 
@@ -48,7 +73,7 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({
     if (chartDefinition) {
       validateAndRenderChart();
     }
-  }, [chartDefinition, repairStatus, onSyntaxErrorDetected]);
+  }, [chartDefinition, repairStatus, onSyntaxErrorDetected, activeTheme]);
 
   if (repairStatus === 'dead') {
     return (
