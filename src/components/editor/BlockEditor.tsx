@@ -13,6 +13,7 @@ import { useLayoutStore } from '../../store/useLayoutStore';
 import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { CodeBlockNodeView } from './CodeBlockNodeView';
+import { TableOfContents } from './TableOfContents';
 
 interface BlockEditorProps {
   onModeChange?: (mode: 'wysiwyg' | 'markdown') => void;
@@ -225,11 +226,22 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
       
       <EditorToolbar editor={editor} />
       
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12">
+      <div className="flex-1 overflow-y-auto p-8 lg:p-12" id="block-editor-scroll-container">
         <div className="max-w-4xl mx-auto">
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      <TableOfContents 
+        content={activeFile.content} 
+        onNavigate={(index) => {
+          const container = document.getElementById('block-editor-scroll-container');
+          const headings = container?.querySelectorAll('.ProseMirror h1, .ProseMirror h2, .ProseMirror h3');
+          if (headings && headings[index]) {
+            headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }}
+      />
 
       {showCmdK && (
         <div className="absolute top-16 left-1/4 w-1/2 bg-gray-800 border border-gray-700 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in zoom-in-95 duration-150">

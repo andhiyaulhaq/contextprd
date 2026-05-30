@@ -12,6 +12,7 @@ import { useAIStream } from '../../hooks/useAIStream';
 import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { useLayoutStore } from '../../store/useLayoutStore';
+import { TableOfContents } from './TableOfContents';
 
 type ViewMode = 'edit' | 'preview' | 'split';
 
@@ -309,7 +310,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
           />
         </div>
         
-        <div className={`h-full overflow-y-auto p-4 bg-gray-950/30 ${viewMode === 'split' ? 'w-1/2' : 'w-full'} ${viewMode === 'edit' ? 'hidden' : ''}`}>
+        <div id="markdown-preview-container" className={`h-full overflow-y-auto p-4 bg-gray-950/30 ${viewMode === 'split' ? 'w-1/2' : 'w-full'} ${viewMode === 'edit' ? 'hidden' : ''}`}>
           {localContent.trim() ? (
             <MarkdownRenderer content={localContent} />
           ) : (
@@ -319,6 +320,27 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
           )}
         </div>
       </div>
+
+      <TableOfContents 
+        content={activeFile.content} 
+        onNavigate={(index, line) => {
+          // 1. Scroll the CodeMirror editor
+          const view = editorRef.current?.view;
+          if (view) {
+            const pos = view.state.doc.line(line).from;
+            view.dispatch({
+              effects: EditorView.scrollIntoView(pos, { y: 'start' })
+            });
+          }
+          
+          // 2. Scroll the Markdown Preview pane
+          const container = document.getElementById('markdown-preview-container');
+          const headings = container?.querySelectorAll('h1, h2, h3');
+          if (headings && headings[index]) {
+            headings[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }}
+      />
 
       {showCmdK && (
         <div className="absolute top-16 left-1/4 w-1/2 bg-gray-800 border border-gray-700 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
