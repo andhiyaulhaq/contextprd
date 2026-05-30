@@ -6,10 +6,29 @@ import { FileNode } from '../../types/project';
 import { exportAsSingleFile, exportAsZip } from '../../lib/exportUtils';
 
 const FileIcon: React.FC<{ name: string; isDir: boolean }> = ({ name, isDir }) => {
-  if (isDir) return <span className="text-xs opacity-60">{'\u{1F4C1}'}</span>;
+  if (isDir) {
+    return (
+      <svg className="w-4 h-4 text-amber-500/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      </svg>
+    );
+  }
+  
   const ext = name.split('.').pop()?.toLowerCase();
-  if (ext === 'md') return <span className="text-xs text-indigo-400">#</span>;
-  return <span className="text-xs text-gray-600">{'\u{1F4C4}'}</span>;
+  if (ext === 'md') {
+    return (
+      <svg className="w-4 h-4 text-indigo-400/80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 2v7h7" />
+      </svg>
+    );
+  }
+  
+  return (
+    <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  );
 };
 
 export const ProjectTree: React.FC = () => {
@@ -31,8 +50,8 @@ export const ProjectTree: React.FC = () => {
 
   if (!project) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-600 text-xs px-4 text-center">
-        <svg className="w-8 h-8 mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+      <div className="flex flex-col items-center justify-center h-full text-gray-500 text-xs px-4 text-center">
+        <svg className="w-8 h-8 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         No project selected
@@ -42,25 +61,24 @@ export const ProjectTree: React.FC = () => {
 
   if (project.fileTree.length === 0) {
     return (
-      <div className="p-4 text-gray-600 text-xs text-center">
+      <div className="p-4 text-gray-500 text-xs text-center">
         Empty project
       </div>
     );
   }
 
-  const renderNode = (node: FileNode, depth: number = 0) => {
+  const renderNode = (node: FileNode) => {
     const isActive = node.id === project.activeFileId;
     const isDir = node.type === 'directory';
 
     return (
       <div key={node.id}>
         <div
-          className={`group flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all ${
+          className={`group flex items-center gap-2 px-2 py-1.5 text-[13px] cursor-pointer transition-all ${
             isActive
-              ? 'bg-indigo-500/10 text-indigo-400 font-medium'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
+              ? 'bg-indigo-500/10 text-indigo-300 font-medium border-l-[3px] border-indigo-500 rounded-r-md -ml-px'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 border-l-[3px] border-transparent rounded-r-md -ml-px'
           }`}
-          style={{ paddingLeft: `${12 + depth * 16}px` }}
           onClick={() => {
             if (!isDir && editingId !== node.id) {
               setActiveFile(project.id, node.id);
@@ -115,7 +133,7 @@ export const ProjectTree: React.FC = () => {
           )}
 
           {!isDir && editingId !== node.id && (
-            <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -144,29 +162,31 @@ export const ProjectTree: React.FC = () => {
             </span>
           )}
         </div>
-        {node.children?.map((child) => renderNode(child, depth + 1))}
+        
+        {/* Render nested children with an indentation guide line */}
+        {node.children && node.children.length > 0 && (
+          <div className="ml-3 pl-1.5 border-l border-gray-800/80">
+            {node.children.map((child) => renderNode(child))}
+          </div>
+        )}
       </div>
     );
   };
 
   return (
     <div className="p-2 space-y-0.5">
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider truncate">
-            {project.name}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 relative">
+      {/* Utility Header */}
+      <div className="flex items-center justify-between px-2 py-2 mb-1">
+        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest select-none">
+          Files
+        </span>
+        <div className="flex items-center gap-0.5 relative">
           <button
             onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
-            className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 relative"
+            className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 active:scale-95"
             title="Export Project"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
           </button>
@@ -177,24 +197,26 @@ export const ProjectTree: React.FC = () => {
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsDownloadMenuOpen(false)}
               />
-              <div className="absolute right-8 top-8 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col text-sm py-1">
+              <div className="absolute right-0 top-7 w-48 bg-gray-900/95 backdrop-blur-md border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                 <button 
-                  className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                  className="px-3 py-2 text-left text-xs text-gray-300 hover:text-indigo-300 hover:bg-gray-800 cursor-pointer flex items-center gap-2 transition-colors"
                   onClick={() => {
                     exportAsSingleFile(project);
                     setIsDownloadMenuOpen(false);
                   }}
                 >
-                  <span className="text-indigo-400">#</span> Single PRD (.md)
+                  <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M13 2v7h7" /></svg>
+                  Single PRD (.md)
                 </button>
                 <button 
-                  className="px-4 py-2 text-left text-gray-300 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                  className="px-3 py-2 text-left text-xs text-gray-300 hover:text-amber-300 hover:bg-gray-800 cursor-pointer flex items-center gap-2 transition-colors"
                   onClick={() => {
                     exportAsZip(project);
                     setIsDownloadMenuOpen(false);
                   }}
                 >
-                  <span className="text-yellow-400 opacity-80">{'\u{1F4C1}'}</span> ZIP Archive (.zip)
+                  <svg className="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  ZIP Archive (.zip)
                 </button>
               </div>
             </>
@@ -209,20 +231,23 @@ export const ProjectTree: React.FC = () => {
                 setIsNewFileId(newId);
               }
             }}
-            className="p-1 rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
+            className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all active:scale-95 shrink-0"
             title="New Markdown File"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
           </button>
         </div>
       </div>
-      {project.fileTree.map((node) => renderNode(node))}
+
+      <div className="px-1">
+        {project.fileTree.map((node) => renderNode(node))}
+      </div>
 
       {deleteDialogFile && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-5 py-4 border-b border-gray-800">
               <h2 className="text-sm font-semibold text-gray-200">Delete File</h2>
               <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone.</p>
@@ -235,7 +260,7 @@ export const ProjectTree: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setDeleteDialogFile(null)}
-                  className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 hover:bg-gray-700 transition-all active:scale-[0.98]"
+                  className="flex-1 px-3 py-2 text-sm text-gray-400 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:text-gray-200 hover:border-gray-600 transition-all active:scale-[0.98]"
                 >
                   Cancel
                 </button>
@@ -244,7 +269,7 @@ export const ProjectTree: React.FC = () => {
                     deleteFile(project.id, deleteDialogFile.id);
                     setDeleteDialogFile(null);
                   }}
-                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/20 transition-all active:scale-[0.98]"
+                  className="flex-1 px-3 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg cursor-pointer hover:bg-rose-500 transition-all active:scale-[0.98]"
                 >
                   Delete
                 </button>
