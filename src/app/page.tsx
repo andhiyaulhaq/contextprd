@@ -9,6 +9,8 @@ import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { useProjectStore } from '../store/useProjectStore';
 import { useConversationStore } from '../store/useConversationStore';
 import { useLayoutStore } from '../store/useLayoutStore';
+import { SidebarFooter } from '../components/SidebarFooter';
+import { SettingsModal } from '../components/SettingsModal';
 
 function AppLoadingSkeleton() {
   return (
@@ -32,13 +34,15 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-950 text-gray-200">
+    <>
+      <div className="flex h-screen bg-gray-950 text-gray-200">
       <aside className={`shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${isLeftSidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0'}`}>
         <div className="w-64 h-full flex flex-col">
           <ProjectSwitcher />
           <div className="flex-1 overflow-y-auto">
             <ProjectTree />
           </div>
+          <SidebarFooter />
         </div>
       </aside>
 
@@ -50,11 +54,14 @@ export default function Home() {
         )}
       </main>
 
-      <aside className={`shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${isRightSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-l-0'}`}>
-        <div className="w-80 h-full flex flex-col">
-          <ChatSidebar />
-        </div>
-      </aside>
-    </div>
+        <aside className={`shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col transition-all duration-300 ease-in-out relative ${isRightSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-l-0'}`}>
+          <div className="w-80 h-full flex flex-col">
+            <ChatSidebar />
+          </div>
+        </aside>
+      </div>
+      
+      <SettingsModal />
+    </>
   );
 }
