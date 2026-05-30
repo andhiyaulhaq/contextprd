@@ -109,7 +109,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor }) => {
             title={btn.title}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               btn.isActive
-                ? 'bg-indigo-600 text-white font-medium'
+                ? 'bg-indigo-600 text-[#ffffff] font-medium'
                 : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >

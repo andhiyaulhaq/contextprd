@@ -261,12 +261,7 @@ const AppearanceTab = () => {
               </button>
             ))}
           </div>
-          {theme !== 'dark' && (
-            <p className="text-xs text-amber-400/80 mt-2 flex items-center gap-1.5">
-              <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-              Light / System mode coming in a future update.
-            </p>
-          )}
+
         </div>
 
         <Divider />
