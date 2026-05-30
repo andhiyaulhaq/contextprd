@@ -10,7 +10,7 @@ export const SidebarFooter: React.FC = () => {
     <div className="shrink-0 p-3 border-t border-gray-800 bg-gray-900/50 flex items-center justify-between mt-auto">
       {/* User Profile Badge */}
       <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-800 p-1.5 -ml-1.5 rounded-md transition-colors group">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-gray-900 group-hover:ring-gray-800 transition-all uppercase">
+        <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-gray-900 group-hover:ring-gray-800 transition-all uppercase">
           {initials}
         </div>
         <div className="flex flex-col justify-center">
@@ -20,7 +20,7 @@ export const SidebarFooter: React.FC = () => {
 
       {/* Utility Icons */}
       <div className="flex items-center gap-1">
-        <button 
+        <button
           className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors cursor-pointer"
           title="Toggle Theme"
         >
@@ -29,7 +29,7 @@ export const SidebarFooter: React.FC = () => {
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
-        <button 
+        <button
           onClick={openSettings}
           className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors cursor-pointer"
           title="Global Settings"
