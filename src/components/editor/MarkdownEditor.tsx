@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
@@ -58,7 +58,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
 
   const [localContent, setLocalContent] = useState(activeFile?.content || '');
   const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const [wordCount, setWordCount] = useState(0);
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   
   const { sendQuery, abort } = useAIStream();
@@ -96,9 +95,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
     return () => clearTimeout(timer);
   }, [localContent, activeFile?.id, draftState]);
 
-  useEffect(() => {
-    const words = localContent.trim() ? localContent.trim().split(/\s+/).length : 0;
-    setWordCount(words);
+  const wordCount = useMemo(() => {
+    return localContent.trim() ? localContent.trim().split(/\s+/).length : 0;
   }, [localContent]);
 
   useEffect(() => {
