@@ -102,6 +102,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
     }
   }, [activeFile?.id, activeFile?.content, editor]);
 
+  // Listen to external insert text events (e.g., from AI chat)
+  useEffect(() => {
+    const handleInsert = (e: CustomEvent<{ text: string }>) => {
+      if (!editor) return;
+      // Since tiptap-markdown intercepts paste but sometimes not insertContent for raw markdown,
+      // we'll insert it as text, or if it's an explicit code block we could construct it.
+      // For now, we insert the raw markdown string and let the user format or let the extension parse it.
+      editor.commands.insertContent(e.detail.text);
+    };
+    
+    window.addEventListener('insert-editor-text', handleInsert as EventListener);
+    return () => window.removeEventListener('insert-editor-text', handleInsert as EventListener);
+  }, [editor]);
+
 
   if (!activeFile) {
     return (

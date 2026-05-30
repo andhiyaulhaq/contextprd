@@ -73,7 +73,8 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({
     if (chartDefinition) {
       validateAndRenderChart();
     }
-  }, [chartDefinition, repairStatus, onSyntaxErrorDetected, activeTheme]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartDefinition, repairStatus, activeTheme]);
 
   if (repairStatus === 'dead') {
     return (

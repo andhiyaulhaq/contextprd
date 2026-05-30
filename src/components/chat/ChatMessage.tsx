@@ -108,7 +108,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                       const text = `\n\`\`\`mermaid\n${chartCode}\n\`\`\`\n`;
                       window.dispatchEvent(new CustomEvent('insert-editor-text', { detail: { text } }));
                     }}
-                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-gray-400 bg-gray-800/80 backdrop-blur border border-gray-700 rounded hover:bg-gray-700 hover:text-indigo-300 transition-colors shadow-sm"
+                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-gray-400 bg-gray-800/80 backdrop-blur border border-gray-700 rounded cursor-pointer hover:bg-gray-700 hover:text-indigo-300 transition-colors shadow-sm"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                     Insert at Cursor
@@ -125,17 +125,39 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </div>
           );
         })}
-        {(message.modelUsed || message.estimatedCost !== undefined) && !isStreaming && (
+        {!isUser && !isSystem && !isStreaming && (
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700/30 text-xs text-gray-600">
-            <div className="flex items-center gap-1.5">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              {message.modelUsed}
+            <div className="flex items-center gap-2">
+              {message.modelUsed && (
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  {message.modelUsed}
+                </div>
+              )}
+              {message.estimatedCost !== undefined && (
+                <span className="font-mono">${message.estimatedCost.toFixed(4)}</span>
+              )}
             </div>
-            {message.estimatedCost !== undefined && (
-              <span className="font-mono">${message.estimatedCost.toFixed(4)}</span>
-            )}
+            
+            <button
+              onClick={() => {
+                let textToInsert = message.content.trim();
+                const wrapMatch = textToInsert.match(/^```[a-zA-Z]*\n([\s\S]*?)\n```$/);
+                if (wrapMatch) {
+                  textToInsert = wrapMatch[1].trim();
+                }
+                window.dispatchEvent(new CustomEvent('insert-editor-text', { detail: { text: textToInsert } }));
+              }}
+              className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 cursor-pointer hover:text-indigo-300 hover:bg-gray-700/50 rounded transition-colors"
+              title="Insert full message at cursor"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Insert
+            </button>
           </div>
         )}
       </div>
