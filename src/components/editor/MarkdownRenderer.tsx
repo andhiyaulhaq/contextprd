@@ -18,7 +18,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onM
     const mermaidBlocks: string[] = [];
     let processed = content;
 
-    const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
+    const mermaidRegex = /```mermaid\s*\r?\n([\s\S]*?)```/g;
     let match: RegExpExecArray | null;
     let idx = 0;
 
