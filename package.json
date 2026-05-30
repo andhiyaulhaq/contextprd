@@ -4,7 +4,7 @@
   "private": true,
   "description": "Context-Aware PRD Orchestrator",
   "scripts": {
-    "dev": "node scripts/generate-templates.mjs && next dev",
+    "dev": "node scripts/generate-templates.mjs && next dev --webpack",
     "build": "node scripts/generate-templates.mjs && next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,6 +18,7 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.43.0",
+    "@huggingface/transformers": "^4.2.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@tauri-apps/api": "^2.11.0",
     "@tiptap/extension-code-block": "^3.23.6",

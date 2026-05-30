@@ -4,6 +4,7 @@ import React from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { FileNode } from '../../types/project';
 import { exportAsSingleFile, exportAsZip } from '../../lib/exportUtils';
+import { ProjectSearchBar } from '../search/ProjectSearchBar';
 
 const FileIcon: React.FC<{ name: string; isDir: boolean }> = ({ name, isDir }) => {
   if (isDir) {
@@ -46,6 +47,27 @@ export const ProjectTree: React.FC = () => {
   const [deleteDialogFile, setDeleteDialogFile] = React.useState<{ id: string, name: string } | null>(null);
   const [isDownloadMenuOpen, setIsDownloadMenuOpen] = React.useState(false);
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleGlobalKeydown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    
+    const handleToggleSearch = () => {
+      setIsSearchOpen((prev) => !prev);
+    };
+
+    window.addEventListener('keydown', handleGlobalKeydown);
+    window.addEventListener('toggle-project-search', handleToggleSearch);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeydown);
+      window.removeEventListener('toggle-project-search', handleToggleSearch);
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleOutsideClick = () => setOpenMenuId(null);
@@ -238,6 +260,16 @@ export const ProjectTree: React.FC = () => {
         </span>
         <div className="flex items-center gap-0.5 relative">
           <button
+            onClick={() => setIsSearchOpen(true)}
+            className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 active:scale-95"
+            title="Search Workspace (Cmd+K)"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+          
+          <button
             onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
             className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-indigo-400 hover:bg-gray-800 cursor-pointer transition-all shrink-0 active:scale-95"
             title="Export Project"
@@ -333,6 +365,10 @@ export const ProjectTree: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {isSearchOpen && (
+        <ProjectSearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       )}
     </div>
   );

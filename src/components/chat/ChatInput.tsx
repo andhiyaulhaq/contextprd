@@ -60,6 +60,24 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isStreaming, onSto
     }
   }, [isStreaming]);
 
+  // Listen to external insert-chat-mention triggers (e.g. from search panel)
+  useEffect(() => {
+    const handleInsertMention = (e: Event) => {
+      const customEvent = e as CustomEvent<{ fileName: string }>;
+      const { fileName } = customEvent.detail;
+      setInput((prev) => {
+        const spacer = prev.trim() === '' ? '' : prev.endsWith(' ') ? '' : ' ';
+        return prev + spacer + `@${fileName} `;
+      });
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+    };
+
+    window.addEventListener('insert-chat-mention', handleInsertMention);
+    return () => window.removeEventListener('insert-chat-mention', handleInsertMention);
+  }, []);
+
   // Filter suggestions based on search term
   const filteredSuggestions = useMemo(() => {
     if (!suggestionSearch) return allMarkdownFiles;
@@ -162,7 +180,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isStreaming, onSto
               type="button"
               onClick={() => selectSuggestion(file)}
               className={`px-3 py-2 text-left text-xs transition-colors flex items-center gap-2 cursor-pointer ${
-                idx === selectedIndex ? 'bg-indigo-600 text-white font-medium' : 'text-gray-300 hover:bg-gray-900'
+                idx === selectedIndex ? 'bg-indigo-600 text-[#ffffff] font-medium' : 'text-gray-300 hover:bg-gray-900'
               }`}
             >
               <span className="opacity-70">#</span>
