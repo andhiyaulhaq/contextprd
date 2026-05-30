@@ -13,6 +13,7 @@ import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import { TableOfContents } from './TableOfContents';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 type ViewMode = 'edit' | 'preview' | 'split';
 
@@ -47,6 +48,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ onModeChange }) 
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const updateFileContent = useProjectStore((s) => s.updateFileContent);
   const { toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
+  const { editorWidth } = useSettingsStore();
+  const widthClass = editorWidth === 'wide' ? 'max-w-6xl' : editorWidth === 'full' ? 'max-w-none' : 'max-w-4xl';
 
   const project = activeProjectId ? projects[activeProjectId] : null;
   const activeFile = project

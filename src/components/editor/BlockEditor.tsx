@@ -14,6 +14,7 @@ import { compileInlineContext } from '../../lib/ai/promptCompiler';
 import { resolveModelEndpoints } from '../../lib/ai/router';
 import { CodeBlockNodeView } from './CodeBlockNodeView';
 import { TableOfContents } from './TableOfContents';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 interface BlockEditorProps {
   onModeChange?: (mode: 'wysiwyg' | 'markdown') => void;
@@ -41,6 +42,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
   
   const { sendQuery, abort } = useAIStream();
   const { toggleLeftSidebar, toggleRightSidebar } = useLayoutStore();
+  const { editorWidth } = useSettingsStore();
+
+  const widthClass = editorWidth === 'wide' ? 'max-w-6xl' : editorWidth === 'full' ? 'max-w-none' : 'max-w-4xl';
 
   const editor = useEditor({
     extensions: [
@@ -227,7 +231,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ onModeChange, currentM
       <EditorToolbar editor={editor} />
       
       <div className="flex-1 overflow-y-auto p-8 lg:p-12" id="block-editor-scroll-container">
-        <div className="max-w-4xl mx-auto">
+        <div className={`${widthClass} mx-auto`}>
           <EditorContent editor={editor} />
         </div>
       </div>
